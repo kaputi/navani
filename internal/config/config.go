@@ -38,12 +38,12 @@ func New() *Config {
 func (c *Config) Init() {
 	err := fsutils.CreateDir(c.DataPath)
 	if err != nil {
-		logger.Critical(fmt.Errorf("failed to create data directory: %w", err))
+		logger.Fatal(fmt.Errorf("failed to create data directory: %w", err))
 	}
 
 	err = fsutils.CreateDir(c.LogsPath)
 	if err != nil {
-		logger.Critical(fmt.Errorf("failed to create logs directory: %w", err))
+		logger.Fatal(fmt.Errorf("failed to create logs directory: %w", err))
 	}
 
 	c.Theme.init()

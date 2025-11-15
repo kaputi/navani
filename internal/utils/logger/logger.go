@@ -14,6 +14,7 @@ var (
 	initialized bool
 	mu          sync.Mutex
 	file        *os.File
+	sessionFile *os.File
 )
 
 func checkDebug() bool {
@@ -21,8 +22,12 @@ func checkDebug() bool {
 	return exists
 }
 
-func dateString() string {
+func dateTimeString() string {
 	return time.Now().Format("02-01-2006_15:04")
+}
+
+func dateString() string {
+	return time.Now().Format("02-01-2006")
 }
 
 func Init(dirPath string) error {
@@ -52,6 +57,14 @@ func Init(dirPath string) error {
 		}
 	}
 
+	sessionFilePath := filepath.Join(dirPath, "navani.log") // TODO: move this to tmp directory unless flag is passed to write to specific file
+	sessionFile, err := os.OpenFile(sessionFilePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	log.SetOutput(sessionFile)
+
+	if err != nil {
+		return fmt.Errorf("error opening session log file: %w", err)
+	}
+
 	initialized = true
 	return nil
 }
@@ -76,12 +89,12 @@ func Log(msg string) {
 
 	msg = strings.Join(lines, "\n")
 
-	logLine := fmt.Sprintf("[%s] %s\n", dateString(), msg)
+	logLine := fmt.Sprintf("[%s] %s\n", dateTimeString(), msg)
 	if _, err := file.WriteString(logLine); err != nil {
-		fmt.Println("error writing to log file")
+		log.Println("error writing to log file")
 	}
 
-	fmt.Println(logLine)
+	log.Println(logLine)
 }
 
 func Debug(msg string) {
@@ -96,7 +109,7 @@ func Err(err error) {
 	Log(fmt.Sprintf("[ERROR] %s", err.Error()))
 }
 
-func Critical(err error) {
+func Fatal(err error) {
 	Log(fmt.Sprintf("[ERROR] %s\n Exit (1)", err.Error()))
 	log.Fatal(err)
 }
@@ -107,6 +120,12 @@ func Close() error {
 
 	if file != nil {
 		err := file.Close()
+		file = nil
+		return err
+	}
+
+	if sessionFile != nil {
+		err := sessionFile.Close()
 		file = nil
 		return err
 	}
