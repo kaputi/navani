@@ -17,33 +17,33 @@ const (
 )
 
 type app struct {
-	focusPanel   focusState
-	leftColumn   ui.Container
-	rightColumn  ui.Container
-	langModel    ui.Lang
-	treeModel    ui.Tree
-	snippetModel ui.SnippetList
-	contentModel ui.Content
+	focusPanel  focusState
+	leftColumn  ui.Container
+	rightColumn ui.Container
+	langUI      ui.Lang
+	treeUI      ui.Tree
+	snippetUI   ui.SnippetList
+	contenUI    ui.Content
 }
 
 func NewApp() app {
 	return app{
-		focusPanel:   0,
-		leftColumn:   ui.NewContainer(),
-		rightColumn:  ui.NewContainer(),
-		langModel:    ui.NewLang(),
-		treeModel:    ui.NewTree(),
-		snippetModel: ui.NewSnippetList(),
-		contentModel: ui.NewContent(),
+		focusPanel:  0,
+		leftColumn:  ui.NewContainer(),
+		rightColumn: ui.NewContainer(),
+		langUI:      ui.NewLang(),
+		treeUI:      ui.NewTree(),
+		snippetUI:   ui.NewSnippetList(),
+		contenUI:    ui.NewContent(),
 	}
 }
 
 func (m app) Init() tea.Cmd {
 	return tea.Batch(
-		m.langModel.Init(),
-		m.treeModel.Init(),
-		m.snippetModel.Init(),
-		m.contentModel.Init(),
+		m.langUI.Init(),
+		m.treeUI.Init(),
+		m.snippetUI.Init(),
+		m.contenUI.Init(),
 	)
 }
 
@@ -86,14 +86,14 @@ func (m app) View() string {
 		snippetStyle = theme.FocusPanel(snippetStyle)
 	}
 
-	langString := langStyle.Render(m.langModel.View())
-	treeString := treeStyle.Render(m.treeModel.View())
-	snippetString := snippetStyle.Render(m.snippetModel.View())
+	langString := langStyle.Render(m.langUI.View())
+	treeString := treeStyle.Render(m.treeUI.View())
+	snippetString := snippetStyle.Render(m.snippetUI.View())
 
 	leftContent := lipgloss.JoinVertical(lipgloss.Top, langString, treeString, snippetString)
 	m.leftColumn.SetContent(leftContent)
 
-	rightContent := theme.ContentPanelStyle.Render(m.contentModel.View())
+	rightContent := theme.ContentPanelStyle.Render(m.contenUI.View())
 	m.rightColumn.SetContent(rightContent)
 
 	s := lipgloss.JoinHorizontal(lipgloss.Top, leftContent, rightContent)
