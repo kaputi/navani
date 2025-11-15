@@ -4,7 +4,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/kaputi/navani/internal/app/ui"
-	"github.com/kaputi/navani/internal/config/theme"
+	"github.com/kaputi/navani/internal/config"
 )
 
 type focusState uint
@@ -17,7 +17,10 @@ const (
 )
 
 type app struct {
-	focusPanel  focusState
+	focusPanel focusState
+
+	config *config.Config
+
 	leftColumn  ui.Container
 	rightColumn ui.Container
 	langUI      ui.Lang
@@ -26,9 +29,12 @@ type app struct {
 	contenUI    ui.Content
 }
 
-func NewApp() app {
+func NewApp(c *config.Config) app {
 	return app{
-		focusPanel:  0,
+		focusPanel: 0,
+
+		config: c,
+
 		leftColumn:  ui.NewContainer(),
 		rightColumn: ui.NewContainer(),
 		langUI:      ui.NewLang(),
@@ -73,17 +79,17 @@ func (m app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m app) View() string {
 
-	langStyle := theme.LangPanelStyle
-	treeStyle := theme.TreePanelStyle
-	snippetStyle := theme.SnippetPanelStyle
+	langStyle := m.config.Theme.LangPanelStyle
+	treeStyle := m.config.Theme.TreePanelStyle
+	snippetStyle := m.config.Theme.SnippetPanelStyle
 
 	switch m.focusPanel {
 	case langPanel:
-		langStyle = theme.FocusPanel(langStyle)
+		langStyle = m.config.Theme.FocusPanel(langStyle)
 	case treePanel:
-		treeStyle = theme.FocusPanel(treeStyle)
+		treeStyle = m.config.Theme.FocusPanel(treeStyle)
 	case snippetPanel:
-		snippetStyle = theme.FocusPanel(snippetStyle)
+		snippetStyle = m.config.Theme.FocusPanel(snippetStyle)
 	}
 
 	langString := langStyle.Render(m.langUI.View())
@@ -93,7 +99,7 @@ func (m app) View() string {
 	leftContent := lipgloss.JoinVertical(lipgloss.Top, langString, treeString, snippetString)
 	m.leftColumn.SetContent(leftContent)
 
-	rightContent := theme.ContentPanelStyle.Render(m.contenUI.View())
+	rightContent := m.config.Theme.ContentPanelStyle.Render(m.contenUI.View())
 	m.rightColumn.SetContent(rightContent)
 
 	s := lipgloss.JoinHorizontal(lipgloss.Top, leftContent, rightContent)

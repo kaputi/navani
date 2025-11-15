@@ -2,13 +2,13 @@ package logger
 
 import (
 	"fmt"
+	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 )
-
-const logFile = "log.txt"
 
 var (
 	initialized bool
@@ -22,10 +22,10 @@ func checkDebug() bool {
 }
 
 func dateString() string {
-	return time.Now().Format("[02-01-2006_15:04]")
+	return time.Now().Format("02-01-2006_15:04")
 }
 
-func Init() error {
+func Init(dirPath string) error {
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -35,7 +35,9 @@ func Init() error {
 
 	var err error
 
-	file, err = os.OpenFile(logFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	fullPath := filepath.Join(dirPath, dateString()+".log")
+
+	file, err = os.OpenFile(fullPath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return fmt.Errorf("error opening log file: %w", err)
 	}
@@ -74,18 +76,29 @@ func Log(msg string) {
 
 	msg = strings.Join(lines, "\n")
 
-	logLine := fmt.Sprintf("%s %s\n", dateString(), msg)
+	logLine := fmt.Sprintf("[%s] %s\n", dateString(), msg)
 	if _, err := file.WriteString(logLine); err != nil {
 		fmt.Println("error writing to log file")
 	}
+
+	fmt.Println(logLine)
 }
 
-func DebugLog(msg string) {
+func Debug(msg string) {
 	if !checkDebug() {
 		return
 	}
 
 	Log(fmt.Sprintf("[DEBUG] %s", msg))
+}
+
+func Err(err error) {
+	Log(fmt.Sprintf("[ERROR] %s", err.Error()))
+}
+
+func Critical(err error) {
+	Log(fmt.Sprintf("[ERROR] %s\n Exit (1)", err.Error()))
+	log.Fatal(err)
 }
 
 func Close() error {
