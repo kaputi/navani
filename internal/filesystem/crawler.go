@@ -1,6 +1,7 @@
 package filesystem
 
 import (
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -59,15 +60,25 @@ func Crawl(dirPath string, snippetIndex *models.SnippetIndex) {
 
 		metadata := models.NewMetadataFromFileName(snippetFileName)
 
+		needsToWriteMeta := false
 		if metaFile, exists := allMetaFiles[metaFileName]; exists {
 			remainingMetaFiles[metaFileName] = false
 			fileMetadata, err := ReadMetadata(filepath.Join(dirPath, metaFile.Name()))
 			if err == nil {
 				metadata = fileMetadata
 			}
+		} else {
+			needsToWriteMeta = true
 		}
 
 		newSnippet := models.NewSnippet(dirPath, snippetFileName, metadata)
+
+		if needsToWriteMeta {
+			err := WriteMetadata(newSnippet)
+			if err != nil {
+				logger.Err(fmt.Errorf("failed to write metadata file: %w", err))
+			}
+		}
 
 		snippetIndex.Add(newSnippet)
 	}

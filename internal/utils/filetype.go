@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"sync"
+
+	"github.com/kaputi/navani/internal/config"
 )
 
 var (
@@ -122,4 +124,11 @@ func MatchExtension(fileName, extension string) bool {
 	}
 
 	return false
+}
+
+func GetExtension(fileName string) string {
+	if MatchExtension(fileName, config.MetaExtension) {
+		return config.MetaExtension
+	}
+	return filepath.Ext(fileName)
 }
