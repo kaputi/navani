@@ -18,23 +18,21 @@ var (
 	// this is the path where the main directory will be created, this should be read from a config file or environment variable
 	// userDataPath = "~" + string(os.PathSeparator) + dataDirName // TODO: make this cross-platform
 	userDataPath  = "." + string(os.PathSeparator)
-	metaExtension = ".meta.json"
+	MetaExtension = ".meta.json"
 )
 
 type Config struct {
-	Theme         *theme
-	DataPath      string
-	LogsPath      string
-	MetaExtension string
+	Theme    *theme
+	DataPath string
+	LogsPath string
 }
 
 func New() *Config {
 	mainPath := filepath.Join(userDataPath, mainDir)
 	return &Config{
-		Theme:         newTheme(),
-		DataPath:      filepath.Join(mainPath, dataDir),
-		LogsPath:      filepath.Join(mainPath, logDir),
-		MetaExtension: metaExtension,
+		Theme:    newTheme(),
+		DataPath: filepath.Join(mainPath, dataDir),
+		LogsPath: filepath.Join(mainPath, logDir),
 	}
 }
 

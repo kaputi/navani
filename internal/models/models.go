@@ -2,8 +2,10 @@ package models
 
 import (
 	"path/filepath"
+	"slices"
 	"time"
 
+	"github.com/kaputi/navani/internal/config"
 	"github.com/kaputi/navani/internal/utils"
 )
 
@@ -50,12 +52,11 @@ func NewSnippet(dirPath, fileName string, metadata Metadata) *Snippet {
 }
 
 func (s *Snippet) MetadataPath() string {
-	bareFileName := filepath.Base(s.FileName)
-	return filepath.Join(s.DirPath, bareFileName+".meta.json")
+	return filepath.Join(s.DirPath, s.FileName+config.MetaExtension)
 }
 
 type SnippetIndex struct {
-	uniqueMap  map[string]*Snippet
+	ByFilePath map[string]*Snippet
 	ByDirPath  map[string][]*Snippet
 	ByFileName map[string][]*Snippet
 	ByName     map[string][]*Snippet
@@ -65,7 +66,7 @@ type SnippetIndex struct {
 
 func NewIndex() *SnippetIndex {
 	return &SnippetIndex{
-		uniqueMap:  make(map[string]*Snippet),
+		ByFilePath: make(map[string]*Snippet),
 		ByDirPath:  make(map[string][]*Snippet),
 		ByFileName: make(map[string][]*Snippet),
 		ByName:     make(map[string][]*Snippet),
@@ -84,7 +85,7 @@ func addToMapList(m map[string][]*Snippet, key string, snippet *Snippet) {
 
 func (idx *SnippetIndex) Add(snippet *Snippet) {
 	// do not add duplicates
-	if _, exists := idx.uniqueMap[snippet.FilePath]; exists {
+	if _, exists := idx.ByFilePath[snippet.FilePath]; exists {
 		return
 	}
 
@@ -98,10 +99,40 @@ func (idx *SnippetIndex) Add(snippet *Snippet) {
 
 }
 
+func removeFromSlice(slice []*Snippet, snippet *Snippet) []*Snippet {
+	for i, s := range slice {
+		if s == snippet {
+			return slices.Delete(slice, i, i+1)
+		}
+	}
+
+	return slice
+}
+
+func (idx *SnippetIndex) Remove(snippet *Snippet) {
+	_, exists := idx.ByFilePath[snippet.FilePath]
+	if !exists {
+		return
+	}
+
+	delete(idx.ByFilePath, snippet.FilePath)
+	idx.ByDirPath[snippet.DirPath] = removeFromSlice(idx.ByDirPath[snippet.DirPath], snippet)
+	idx.ByFileName[snippet.FileName] = removeFromSlice(idx.ByFileName[snippet.FileName], snippet)
+	idx.ByName[snippet.Name] = removeFromSlice(idx.ByName[snippet.Name], snippet)
+	idx.ByLanguage[snippet.Language] = removeFromSlice(idx.ByLanguage[snippet.Language], snippet)
+	for _, tag := range snippet.Tags {
+		idx.ByTag[tag] = removeFromSlice(idx.ByTag[tag], snippet)
+	}
+}
+
 func (idx *SnippetIndex) UpdateMetadata(snippetFilePath string, metadata Metadata) {
-	snippet, exists := idx.uniqueMap[snippetFilePath]
+	snippet, exists := idx.ByFilePath[snippetFilePath]
 	if !exists {
 		return
 	}
 	snippet.Metadata = metadata
+}
+
+func SnippetPathFromMetadataPath(metadataPath string) string {
+	return metadataPath[:len(metadataPath)-len(config.MetaExtension)]
 }

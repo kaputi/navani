@@ -19,7 +19,7 @@ tidy:
 
 # build:
 	# mkdir -p bin
-	# GOOS=linux GOARCH=amd64 go build -o bin/${BINARY_NAME}-linux main.go
+	# GOOS=linux GOARCH=amd64 go build -o bin/${BINARY_NAME}-linux cmd/main.go
 	# @echo "Build complete"
 
 # If the first argument is "run"...
@@ -32,7 +32,7 @@ endif
 
 .PHONY: run
 run:
-	go run main.go $(RUN_ARGS)
+	go run cmd/main.go $(RUN_ARGS)
 # run: build
 	# ./bin/${BINARY_NAME}-linux $(RUN_ARGS)
 

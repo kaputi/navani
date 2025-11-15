@@ -35,7 +35,9 @@ func main() {
 
 	snippetIndex := models.NewIndex()
 
-	go filesystem.WatchDirectory(c.DataPath, snippetIndex, c)
+	filesystem.Crawl(c.DataPath, snippetIndex)
+
+	go filesystem.WatchDirectory(c.DataPath, snippetIndex)
 
 	p := tea.NewProgram(app.NewApp(c), tea.WithAltScreen())
 

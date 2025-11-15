@@ -11,7 +11,7 @@ import (
 	"github.com/kaputi/navani/internal/utils/logger"
 )
 
-func Crawl(dirPath string, snippetIndex *models.SnippetIndex, c *config.Config) {
+func Crawl(dirPath string, snippetIndex *models.SnippetIndex) {
 	filesInDir, err := os.ReadDir(dirPath)
 	if err != nil {
 		logger.Err(err)
@@ -36,12 +36,12 @@ func Crawl(dirPath string, snippetIndex *models.SnippetIndex, c *config.Config) 
 
 		fileName := fileEntry.Name()
 		extension := filepath.Ext(fileName)
-		if utils.MatchExtension(fileName, c.MetaExtension) {
-			extension = c.MetaExtension
+		if utils.MatchExtension(fileName, config.MetaExtension) {
+			extension = config.MetaExtension
 		}
 
 		switch extension {
-		case c.MetaExtension:
+		case config.MetaExtension:
 			allMetaFiles[fileName] = fileEntry
 			remainingMetaFiles[fileName] = true
 		default:
@@ -55,7 +55,7 @@ func Crawl(dirPath string, snippetIndex *models.SnippetIndex, c *config.Config) 
 		snippetFileName := snippetFile.Name()
 		extension := filepath.Ext(snippetFileName)
 		bareName := snippetFileName[:len(snippetFileName)-len(extension)]
-		metaFileName := bareName + c.MetaExtension
+		metaFileName := bareName + config.MetaExtension
 
 		metadata := models.NewMetadataFromFileName(snippetFileName)
 
@@ -73,7 +73,7 @@ func Crawl(dirPath string, snippetIndex *models.SnippetIndex, c *config.Config) 
 	}
 
 	for _, dirEntry := range directories {
-		Crawl(filepath.Join(dirPath, dirEntry.Name()), snippetIndex, c)
+		Crawl(filepath.Join(dirPath, dirEntry.Name()), snippetIndex)
 	}
 
 	for metaFileName, isRemaining := range remainingMetaFiles {
