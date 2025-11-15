@@ -48,11 +48,21 @@ func Init(dirPath string) error {
 	}
 
 	if checkDebug() {
-		if _, err := file.WriteString("\n=====================================================\n==== APP in DEBUG mode ==============================\n"); err != nil {
+		debugMessage := `
+=====================================================
+==== APP in DEBUG mode ==============================
+=====================================================
+`
+		if _, err := file.WriteString(debugMessage); err != nil {
 			return fmt.Errorf("error writing to log file: %w", err)
 		}
 	} else {
-		if _, err := file.WriteString("\n=====================================================\n==== App in NORMAL mode =============================\n"); err != nil {
+		normalMessage := `
+=====================================================
+==== APP in NORMAL mode =============================
+=====================================================
+`
+		if _, err := file.WriteString(normalMessage); err != nil {
 			return fmt.Errorf("error writing to log file: %w", err)
 		}
 	}
