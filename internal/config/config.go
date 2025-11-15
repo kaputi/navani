@@ -14,24 +14,27 @@ var (
 	mainDir = ".navani"
 	dataDir = "data"
 	logDir  = "logs"
-	// USER DEFINED PATH
+	// USER DEFINED Configs
 	// this is the path where the main directory will be created, this should be read from a config file or environment variable
 	// userDataPath = "~" + string(os.PathSeparator) + dataDirName // TODO: make this cross-platform
-	userDataPath = "." + string(os.PathSeparator)
+	userDataPath  = "." + string(os.PathSeparator)
+	metaExtension = ".meta.json"
 )
 
 type Config struct {
-	Theme    *theme
-	DataPath string
-	LogsPath string
+	Theme         *theme
+	DataPath      string
+	LogsPath      string
+	MetaExtension string
 }
 
 func New() *Config {
 	mainPath := filepath.Join(userDataPath, mainDir)
 	return &Config{
-		Theme:    newTheme(),
-		DataPath: filepath.Join(mainPath, dataDir),
-		LogsPath: filepath.Join(mainPath, logDir),
+		Theme:         newTheme(),
+		DataPath:      filepath.Join(mainPath, dataDir),
+		LogsPath:      filepath.Join(mainPath, logDir),
+		MetaExtension: metaExtension,
 	}
 }
 

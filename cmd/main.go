@@ -7,7 +7,7 @@ import (
 
 	"github.com/kaputi/navani/internal/app"
 	"github.com/kaputi/navani/internal/config"
-	filesystem "github.com/kaputi/navani/internal/fileSystem"
+	"github.com/kaputi/navani/internal/filesystem"
 	"github.com/kaputi/navani/internal/models"
 	"github.com/kaputi/navani/internal/utils/logger"
 )
@@ -35,7 +35,7 @@ func main() {
 
 	snippetIndex := models.NewIndex()
 
-	go filesystem.WatchDirectory(c.DataPath, snippetIndex)
+	go filesystem.WatchDirectory(c.DataPath, snippetIndex, c)
 
 	p := tea.NewProgram(app.NewApp(c), tea.WithAltScreen())
 

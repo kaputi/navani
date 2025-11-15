@@ -3,13 +3,16 @@ package filesystem
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/kaputi/navani/internal/config"
 	"github.com/kaputi/navani/internal/models"
+	"github.com/kaputi/navani/internal/utils"
 	"github.com/kaputi/navani/internal/utils/logger"
 )
 
-func WatchDirectory(dirPath string, snippetIndex *models.SnippetIndex) {
+func WatchDirectory(dirPath string, snippetIndex *models.SnippetIndex, c *config.Config) {
 
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -36,9 +39,26 @@ func WatchDirectory(dirPath string, snippetIndex *models.SnippetIndex) {
 				return
 			}
 			if event.Op&fsnotify.Write == fsnotify.Write {
-				logger.Log(fmt.Sprintf("Modified file: %s", event.Name))
+				// logger.Log(fmt.Sprintf("Modified file: %s", event.Name))
 				// TODO: if file is snippet, there is not much to do because metadata is separate
 				// if file is metadata, update index accordingly
+
+				fullPath := event.Name
+				fileName := filepath.Base(fullPath)
+				if utils.MatchExtension(fileName, c.MetaExtension) {
+					metadata, err := ReadMetadata(fullPath)
+					if err != nil {
+						logger.Err(fmt.Errorf("failed to read metadata file: %w", err))
+					} else {
+						ft := metadata.Language
+						extensionByFt, err := utils.ExtensionByFT(ft)
+						if err == nil {
+							dirPath := filepath.Dir(fullPath)
+							snippetFilePath := filepath.Join(dirPath, fileName[:len(fileName)-len(c.MetaExtension)]+extensionByFt)
+							snippetIndex.UpdateMetadata(snippetFilePath, metadata)
+						}
+					}
+				}
 			}
 			if event.Op&fsnotify.Create == fsnotify.Create {
 				logger.Log(fmt.Sprintf("Created file: %s", event.Name))

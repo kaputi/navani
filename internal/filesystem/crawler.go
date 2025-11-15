@@ -1,17 +1,17 @@
 package filesystem
 
 import (
-	"encoding/json"
 	"io/fs"
 	"os"
 	"path/filepath"
 
+	"github.com/kaputi/navani/internal/config"
 	"github.com/kaputi/navani/internal/models"
 	"github.com/kaputi/navani/internal/utils"
 	"github.com/kaputi/navani/internal/utils/logger"
 )
 
-func Crawl(dirPath string, snippetIndex *models.SnippetIndex) {
+func Crawl(dirPath string, snippetIndex *models.SnippetIndex, c *config.Config) {
 	filesInDir, err := os.ReadDir(dirPath)
 	if err != nil {
 		logger.Err(err)
@@ -36,9 +36,12 @@ func Crawl(dirPath string, snippetIndex *models.SnippetIndex) {
 
 		fileName := fileEntry.Name()
 		extension := filepath.Ext(fileName)
+		if utils.MatchExtension(fileName, c.MetaExtension) {
+			extension = c.MetaExtension
+		}
 
 		switch extension {
-		case ".json":
+		case c.MetaExtension:
 			allMetaFiles[fileName] = fileEntry
 			remainingMetaFiles[fileName] = true
 		default:
@@ -52,16 +55,15 @@ func Crawl(dirPath string, snippetIndex *models.SnippetIndex) {
 		snippetFileName := snippetFile.Name()
 		extension := filepath.Ext(snippetFileName)
 		bareName := snippetFileName[:len(snippetFileName)-len(extension)]
-		metaFileName := bareName + ".meta.json"
+		metaFileName := bareName + c.MetaExtension
 
 		metadata := models.NewMetadataFromFileName(snippetFileName)
 
 		if metaFile, exists := allMetaFiles[metaFileName]; exists {
 			remainingMetaFiles[metaFileName] = false
-			if bytes, err := os.ReadFile(filepath.Join(dirPath, metaFile.Name())); err == nil {
-				if err := json.Unmarshal(bytes, &metadata); err != nil {
-					metadata = models.NewMetadataFromFileName(snippetFileName)
-				}
+			fileMetadata, err := ReadMetadata(filepath.Join(dirPath, metaFile.Name()))
+			if err == nil {
+				metadata = fileMetadata
 			}
 		}
 
@@ -71,7 +73,7 @@ func Crawl(dirPath string, snippetIndex *models.SnippetIndex) {
 	}
 
 	for _, dirEntry := range directories {
-		Crawl(filepath.Join(dirPath, dirEntry.Name()), snippetIndex)
+		Crawl(filepath.Join(dirPath, dirEntry.Name()), snippetIndex, c)
 	}
 
 	for metaFileName, isRemaining := range remainingMetaFiles {
