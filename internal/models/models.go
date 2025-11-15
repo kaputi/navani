@@ -49,6 +49,11 @@ func NewSnippet(dirPath, fileName string, metadata Metadata) *Snippet {
 	}
 }
 
+func (s *Snippet) MetadataPath() string {
+	bareFileName := filepath.Base(s.FileName)
+	return filepath.Join(s.DirPath, bareFileName+".meta.json")
+}
+
 type SnippetIndex struct {
 	uniqueMap  map[string]*Snippet
 	ByDirPath  map[string][]*Snippet
@@ -91,4 +96,12 @@ func (idx *SnippetIndex) Add(snippet *Snippet) {
 		addToMapList(idx.ByTag, tag, snippet)
 	}
 
+}
+
+func (idx *SnippetIndex) UpdateMetadata(snippetFilePath string, metadata Metadata) {
+	snippet, exists := idx.uniqueMap[snippetFilePath]
+	if !exists {
+		return
+	}
+	snippet.Metadata = metadata
 }
