@@ -8,6 +8,7 @@ import (
 	"github.com/kaputi/navani/internal/app"
 	"github.com/kaputi/navani/internal/config"
 	filesystem "github.com/kaputi/navani/internal/fileSystem"
+	"github.com/kaputi/navani/internal/models"
 	"github.com/kaputi/navani/internal/utils/logger"
 )
 
@@ -15,7 +16,6 @@ func main() {
 
 	c := config.New()
 	c.Init()
-
 
 	err := logger.Init(c.LogsPath)
 	if err != nil {
@@ -33,7 +33,9 @@ func main() {
 
 	logger.Log("Application started")
 
-	go filesystem.WatchDirectory(c.DataPath)
+	snippetIndex := models.NewIndex()
+
+	go filesystem.WatchDirectory(c.DataPath, snippetIndex)
 
 	p := tea.NewProgram(app.NewApp(c), tea.WithAltScreen())
 

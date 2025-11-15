@@ -1,0 +1,85 @@
+package filesystem
+
+import (
+	"encoding/json"
+	"io/fs"
+	"os"
+	"path/filepath"
+
+	"github.com/kaputi/navani/internal/models"
+	"github.com/kaputi/navani/internal/utils"
+	"github.com/kaputi/navani/internal/utils/logger"
+)
+
+func Crawl(dirPath string, snippetIndex *models.SnippetIndex) {
+	filesInDir, err := os.ReadDir(dirPath)
+	if err != nil {
+		logger.Err(err)
+		return
+	}
+
+	var (
+		directories        []fs.DirEntry
+		snippetFiles       []fs.DirEntry
+		allMetaFiles       = make(map[string]fs.DirEntry)
+		remainingMetaFiles = make(map[string]bool)
+	)
+
+	// Categorize files
+	// files that are not .json or snippet files are ignored
+	// all .json files are considered metadata files // TODO: this may need to be more strict
+	for _, fileEntry := range filesInDir {
+		if fileEntry.IsDir() {
+			directories = append(directories, fileEntry)
+			continue
+		}
+
+		fileName := fileEntry.Name()
+		extension := filepath.Ext(fileName)
+
+		switch extension {
+		case ".json":
+			allMetaFiles[fileName] = fileEntry
+			remainingMetaFiles[fileName] = true
+		default:
+			if _, err := utils.FTbyExtension(extension); err == nil {
+				snippetFiles = append(snippetFiles, fileEntry)
+			}
+		}
+	}
+
+	for _, snippetFile := range snippetFiles {
+		snippetFileName := snippetFile.Name()
+		extension := filepath.Ext(snippetFileName)
+		bareName := snippetFileName[:len(snippetFileName)-len(extension)]
+		metaFileName := bareName + ".meta.json"
+
+		metadata := models.NewMetadataFromFileName(snippetFileName)
+
+		if metaFile, exists := allMetaFiles[metaFileName]; exists {
+			remainingMetaFiles[metaFileName] = false
+			if bytes, err := os.ReadFile(filepath.Join(dirPath, metaFile.Name())); err == nil {
+				if err := json.Unmarshal(bytes, &metadata); err != nil {
+					metadata = models.NewMetadataFromFileName(snippetFileName)
+				}
+			}
+		}
+
+		newSnippet := models.NewSnippet(dirPath, snippetFileName, metadata)
+
+		snippetIndex.Add(newSnippet)
+	}
+
+	for _, dirEntry := range directories {
+		Crawl(filepath.Join(dirPath, dirEntry.Name()), snippetIndex)
+	}
+
+	for metaFileName, isRemaining := range remainingMetaFiles {
+		if isRemaining {
+			err := os.Remove(filepath.Join(dirPath, metaFileName))
+			if err != nil {
+				logger.Err(err)
+			}
+		}
+	}
+}
