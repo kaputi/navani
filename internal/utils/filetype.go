@@ -56,8 +56,15 @@ var (
 		".yaml":   "yaml",
 		".yml":    "yaml",
 	}
-	mu sync.RWMutex
+	reverseLookupFt = make(map[string]string)
+	mu              sync.RWMutex
 )
+
+func init() {
+	for ext, ft := range extensionMap {
+		reverseLookupFt[ft] = ext
+	}
+}
 
 func FTbyFileName(fileName string) (string, error) {
 	mu.RLock()
@@ -86,6 +93,18 @@ func FTbyExtension(extension string) (string, error) {
 	return "unknown", fmt.Errorf("file type not recognized for extension: %s", extension)
 }
 
+func ExtensionByFT(fileType string) (string, error) {
+	mu.RLock()
+	defer mu.RUnlock()
+
+	extension, exists := reverseLookupFt[fileType]
+	if exists {
+		return extension, nil
+	}
+
+	return "unknown", fmt.Errorf("extension not recognized for file type: %s", fileType)
+}
+
 func RegisterFileType(extension, fileType string) {
 	mu.Lock()
 	defer mu.Unlock()
@@ -93,4 +112,14 @@ func RegisterFileType(extension, fileType string) {
 		return
 	}
 	extensionMap[extension] = fileType
+	reverseLookupFt[fileType] = extension
+}
+
+func MatchExtension(fileName, extension string) bool {
+	if len(fileName) > len(extension) &&
+		fileName[len(fileName)-len(extension):] == extension {
+		return true
+	}
+
+	return false
 }
