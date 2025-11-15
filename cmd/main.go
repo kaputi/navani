@@ -15,7 +15,7 @@ func main() {
 	c := config.New()
 	c.Init()
 
-	err := logger.Init(c.DataDirPath)
+	err := logger.Init(c.LogsPath)
 	if err != nil {
 		log.Fatal(err)
 	}
