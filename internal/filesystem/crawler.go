@@ -54,9 +54,7 @@ func Crawl(dirPath string, snippetIndex *models.SnippetIndex) {
 
 	for _, snippetFile := range snippetFiles {
 		snippetFileName := snippetFile.Name()
-		extension := filepath.Ext(snippetFileName)
-		bareName := snippetFileName[:len(snippetFileName)-len(extension)]
-		metaFileName := bareName + config.MetaExtension
+		metaFileName := snippetFileName + config.MetaExtension
 
 		metadata := models.NewMetadataFromFileName(snippetFileName)
 
