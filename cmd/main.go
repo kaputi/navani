@@ -10,6 +10,7 @@ import (
 	"github.com/kaputi/navani/internal/config"
 	"github.com/kaputi/navani/internal/filesystem"
 	"github.com/kaputi/navani/internal/models"
+	"github.com/kaputi/navani/internal/utils"
 	"github.com/kaputi/navani/internal/utils/logger"
 )
 
@@ -30,9 +31,13 @@ func main() {
 		}
 	}()
 
-	// NOTE: until here loggs need to go to standard output because logger is not initialized
-
+	// until here loggs need to go to standard output because logger is not initialized
 	logger.Log("Application started")
+
+	// use config
+	for ext, ft := range c.UserFiletypes {
+		utils.RegisterFileType(ext, ft)
+	}
 
 	snippetIndex := models.NewIndex()
 

@@ -22,17 +22,19 @@ var (
 )
 
 type Config struct {
-	Theme    *theme
-	DataPath string
-	LogsPath string
+	Theme         *theme
+	DataPath      string
+	LogsPath      string
+	UserFiletypes map[string]string
 }
 
 func New() *Config {
 	mainPath := filepath.Join(userDataPath, mainDir)
 	return &Config{
-		Theme:    newTheme(),
-		DataPath: filepath.Join(mainPath, dataDir),
-		LogsPath: filepath.Join(mainPath, logDir),
+		Theme:         newTheme(),
+		DataPath:      filepath.Join(mainPath, dataDir),
+		LogsPath:      filepath.Join(mainPath, logDir),
+		UserFiletypes: make(map[string]string),
 	}
 }
 
