@@ -44,6 +44,17 @@ func main() {
 	logger.Log(fmt.Sprintf("Crawling data directory: %s", c.DataPath))
 	filesystem.Crawl(c.DataPath, snippetIndex)
 
+	snippets := snippetIndex.List()
+
+	// LOG FOR DEBUGGING PURPOSES
+	snippetsMsg := ""
+	for _, snippet := range snippets {
+		snippetsMsg += fmt.Sprintf("\n %s", snippet.FilePath)
+	}
+
+	logger.Debug(fmt.Sprintf("Snippets found: %d %s", len(snippets), snippetsMsg))
+	/////////////////////////////
+
 	go filesystem.WatchDirectory(c.DataPath, snippetIndex)
 
 	p := tea.NewProgram(app.NewApp(c), tea.WithAltScreen())

@@ -17,7 +17,6 @@ func handleRemoved(fullPath string, isMeta bool, snippetIndex *models.SnippetInd
 	fileName := filepath.Base(fullPath)
 
 	if !isMeta {
-		// file is a snippet
 		snippet, exist := snippetIndex.ByFilePath[fullPath]
 		if exist {
 			snippetIndex.Remove(snippet)
@@ -26,13 +25,13 @@ func handleRemoved(fullPath string, isMeta bool, snippetIndex *models.SnippetInd
 		err := os.Remove(metadataPath)
 		if err != nil {
 			logger.Err(fmt.Errorf("failed to remove metadata file: %w", err))
+		} else {
+			logger.Log(fmt.Sprintf("Removed metadata file for snippet: %s", fullPath))
 		}
 	} else {
 		metadata := models.NewMetadataFromFileName(fileName)
 		snippetPath := models.SnippetPathFromMetadataPath(fullPath)
 		snippet, exists := snippetIndex.ByFilePath[snippetPath]
-		// TODO: it says the snippet does not exist.. so it does not rerecreate the metadata file
-		logger.Log(fmt.Sprintf("\n ====== SNIPPET PATH: %s %v", snippetPath, exists))
 		if exists {
 			snippet.Metadata = metadata
 			err := WriteMetadata(snippet)
@@ -71,16 +70,18 @@ func WatchDirectory(wathchPath string, snippetIndex *models.SnippetIndex) {
 			}
 
 			fullPath := event.Name
-			dirPath := filepath.Dir(fullPath)
 			fileName := filepath.Base(fullPath)
 			extension := utils.GetExtension(fileName)
+
 			_, err := utils.FTbyExtension(extension)
-			if !utils.MatchExtension(fileName, config.MetaExtension) && err != nil {
+			if extension != config.MetaExtension && err != nil {
 				// only care about snippet files and metadata files
 				continue
 			}
+
 			isMeta := extension == config.MetaExtension
 
+			// WRITE ==================================================
 			if event.Op&fsnotify.Write == fsnotify.Write {
 				logger.Log(fmt.Sprintf("Modified file: %s", fullPath))
 
@@ -89,45 +90,43 @@ func WatchDirectory(wathchPath string, snippetIndex *models.SnippetIndex) {
 					if err != nil {
 						logger.Err(fmt.Errorf("failed to read metadata file: %w", err))
 					} else {
-						ft := metadata.Language
-						extensionByFt, err := utils.ExtensionByFT(ft)
-						if err == nil {
-							snippetFilePath := filepath.Join(dirPath, fileName[:len(fileName)-len(config.MetaExtension)]+extensionByFt)
-							snippetIndex.UpdateMetadata(snippetFilePath, metadata)
-							logger.Log(fmt.Sprintf("Updated metadata for snippet: %s", snippetFilePath))
-						}
+						snippetFilePath := models.SnippetPathFromMetadataPath(fullPath)
+						snippetIndex.UpdateMetadata(snippetFilePath, metadata)
 					}
 				}
 			}
+			// CREATE ==================================================
 			if event.Op&fsnotify.Create == fsnotify.Create {
+
 				logger.Log(fmt.Sprintf("Created file: %s", fullPath))
 				if !isMeta {
 					metadata := models.NewMetadataFromFileName(fileName)
 					snippet := models.NewSnippet(filepath.Dir(fullPath), fileName, metadata)
 					snippetIndex.Add(snippet)
-					logger.Log(fmt.Sprintf("Added new snippet to index: %s", fullPath))
-
 					err := WriteMetadata(snippet)
 					if err != nil {
 						logger.Err(fmt.Errorf("failed to write metadata file: %w", err))
-					} else {
-						logger.Log(fmt.Sprintf("Created metadata file for snippet: %s", snippet.MetadataPath()))
 					}
 				}
 			}
+			// REMOVE ==================================================
 			if event.Op&fsnotify.Remove == fsnotify.Remove {
 				logger.Log(fmt.Sprintf("Removed file: %s", fullPath))
 				handleRemoved(fullPath, isMeta, snippetIndex)
 			}
+			// RENAME ==================================================
 			if event.Op&fsnotify.Rename == fsnotify.Rename {
-				// in some OS the remove triggers a rename first so we handle this way
+				// TODO: if file is snippet, update and rename metadata
+				// if file is metadata, keep old name (WATCH RECURSIVE RENAMES!!!!!)
+				// event.renameName is not exported by fsnotify because of a bug,
+				// at the moment there is no handling for rename,if this is not fixed soon
+				// i should track the rename and implement the handler myself.
+
+				// in some OS the rename does a remove and then a create
 				if _, err := os.Stat(event.Name); os.IsNotExist(err) {
-					logger.Log(fmt.Sprintf("Removed file: %s", fullPath))
-					handleRemoved(fullPath, isMeta, snippetIndex)
+					logger.Log(fmt.Sprintf("Removed file from rename: %s", fullPath))
 				} else {
 					logger.Log(fmt.Sprintf("Renamed file: %s", fullPath))
-					// TODO: if file is snippet, update and rename metadata
-					// if file is metadata, keep old name (WATCH RECURSIVE RENAMES!!!!!)
 				}
 			}
 

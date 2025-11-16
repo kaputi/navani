@@ -8,6 +8,7 @@ import (
 
 	"github.com/kaputi/navani/internal/config"
 	"github.com/kaputi/navani/internal/utils"
+	"github.com/kaputi/navani/internal/utils/logger"
 )
 
 type Metadata struct {
@@ -94,6 +95,8 @@ func (idx *SnippetIndex) Add(snippet *Snippet) {
 		return
 	}
 
+	logger.Debug("Adding snippet to index: " + snippet.FilePath)
+	idx.ByFilePath[snippet.FilePath] = snippet
 	addToMapList(idx.ByDirPath, snippet.DirPath, snippet)
 	addToMapList(idx.ByFileName, snippet.FileName, snippet)
 	addToMapList(idx.ByName, snippet.Name, snippet)
@@ -141,7 +144,16 @@ func (idx *SnippetIndex) UpdateMetadata(snippetFilePath string, metadata Metadat
 	if !exists {
 		return
 	}
+	logger.Debug("Updating metadata for snippet: " + snippetFilePath)
 	snippet.Metadata = metadata
+}
+
+func (idx *SnippetIndex) List() []*Snippet {
+	snippets := []*Snippet{}
+	for _, snippet := range idx.ByFilePath {
+		snippets = append(snippets, snippet)
+	}
+	return snippets
 }
 
 func SnippetPathFromMetadataPath(metadataPath string) string {

@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/kaputi/navani/internal/models"
+	"github.com/kaputi/navani/internal/utils/logger"
 )
 
 func CreateSnippet(snippet *models.Snippet, content string) error {
@@ -41,6 +42,8 @@ func WriteMetadata(snippet *models.Snippet) error {
 	if err != nil {
 		return err
 	}
+
+	logger.Log("Metadata written to " + metadataFilePath)
 
 	return nil
 
