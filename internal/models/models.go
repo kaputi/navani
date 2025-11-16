@@ -3,6 +3,7 @@ package models
 import (
 	"path/filepath"
 	"slices"
+	"sync"
 	"time"
 
 	"github.com/kaputi/navani/internal/config"
@@ -62,6 +63,7 @@ type SnippetIndex struct {
 	ByName     map[string][]*Snippet
 	ByLanguage map[string][]*Snippet
 	ByTag      map[string][]*Snippet
+	mu         sync.RWMutex
 }
 
 func NewIndex() *SnippetIndex {
@@ -84,6 +86,9 @@ func addToMapList(m map[string][]*Snippet, key string, snippet *Snippet) {
 }
 
 func (idx *SnippetIndex) Add(snippet *Snippet) {
+	idx.mu.Lock()
+	defer idx.mu.Unlock()
+
 	// do not add duplicates
 	if _, exists := idx.ByFilePath[snippet.FilePath]; exists {
 		return
@@ -110,6 +115,9 @@ func removeFromSlice(slice []*Snippet, snippet *Snippet) []*Snippet {
 }
 
 func (idx *SnippetIndex) Remove(snippet *Snippet) {
+	idx.mu.Lock()
+	defer idx.mu.Unlock()
+
 	_, exists := idx.ByFilePath[snippet.FilePath]
 	if !exists {
 		return
@@ -126,6 +134,9 @@ func (idx *SnippetIndex) Remove(snippet *Snippet) {
 }
 
 func (idx *SnippetIndex) UpdateMetadata(snippetFilePath string, metadata Metadata) {
+	idx.mu.Lock()
+	defer idx.mu.Unlock()
+
 	snippet, exists := idx.ByFilePath[snippetFilePath]
 	if !exists {
 		return
