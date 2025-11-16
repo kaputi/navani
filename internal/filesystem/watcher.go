@@ -12,13 +12,11 @@ import (
 	"github.com/kaputi/navani/internal/utils/logger"
 )
 
-func handleRemoved(fullPath string, snippetIndex *models.SnippetIndex) {
+func handleRemoved(fullPath string, isMeta bool, snippetIndex *models.SnippetIndex) {
 	dirPath := filepath.Dir(fullPath)
 	fileName := filepath.Base(fullPath)
-	extension := filepath.Ext(fileName)
 
-	_, err := utils.FTbyExtension(extension)
-	if err == nil {
+	if !isMeta {
 		// file is a snippet
 		snippet, exist := snippetIndex.ByFilePath[fullPath]
 		if exist {
@@ -33,6 +31,8 @@ func handleRemoved(fullPath string, snippetIndex *models.SnippetIndex) {
 		metadata := models.NewMetadataFromFileName(fileName)
 		snippetPath := models.SnippetPathFromMetadataPath(fullPath)
 		snippet, exists := snippetIndex.ByFilePath[snippetPath]
+		// TODO: it says the snippet does not exist.. so it does not rerecreate the metadata file
+		logger.Log(fmt.Sprintf("\n ====== SNIPPET PATH: %s %v", snippetPath, exists))
 		if exists {
 			snippet.Metadata = metadata
 			err := WriteMetadata(snippet)
@@ -73,12 +73,18 @@ func WatchDirectory(wathchPath string, snippetIndex *models.SnippetIndex) {
 			fullPath := event.Name
 			dirPath := filepath.Dir(fullPath)
 			fileName := filepath.Base(fullPath)
-			extension := filepath.Ext(fileName)
+			extension := utils.GetExtension(fileName)
+			_, err := utils.FTbyExtension(extension)
+			if !utils.MatchExtension(fileName, config.MetaExtension) && err != nil {
+				// only care about snippet files and metadata files
+				continue
+			}
+			isMeta := extension == config.MetaExtension
 
 			if event.Op&fsnotify.Write == fsnotify.Write {
 				logger.Log(fmt.Sprintf("Modified file: %s", fullPath))
 
-				if utils.MatchExtension(fileName, config.MetaExtension) {
+				if isMeta {
 					metadata, err := ReadMetadata(fullPath)
 					if err != nil {
 						logger.Err(fmt.Errorf("failed to read metadata file: %w", err))
@@ -95,8 +101,7 @@ func WatchDirectory(wathchPath string, snippetIndex *models.SnippetIndex) {
 			}
 			if event.Op&fsnotify.Create == fsnotify.Create {
 				logger.Log(fmt.Sprintf("Created file: %s", fullPath))
-				_, err := utils.FTbyExtension(extension)
-				if err == nil {
+				if !isMeta {
 					metadata := models.NewMetadataFromFileName(fileName)
 					snippet := models.NewSnippet(filepath.Dir(fullPath), fileName, metadata)
 					snippetIndex.Add(snippet)
@@ -112,13 +117,13 @@ func WatchDirectory(wathchPath string, snippetIndex *models.SnippetIndex) {
 			}
 			if event.Op&fsnotify.Remove == fsnotify.Remove {
 				logger.Log(fmt.Sprintf("Removed file: %s", fullPath))
-				handleRemoved(fullPath, snippetIndex)
+				handleRemoved(fullPath, isMeta, snippetIndex)
 			}
 			if event.Op&fsnotify.Rename == fsnotify.Rename {
 				// in some OS the remove triggers a rename first so we handle this way
 				if _, err := os.Stat(event.Name); os.IsNotExist(err) {
 					logger.Log(fmt.Sprintf("Removed file: %s", fullPath))
-					handleRemoved(fullPath, snippetIndex)
+					handleRemoved(fullPath, isMeta, snippetIndex)
 				} else {
 					logger.Log(fmt.Sprintf("Renamed file: %s", fullPath))
 					// TODO: if file is snippet, update and rename metadata

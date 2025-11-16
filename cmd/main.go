@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -35,6 +36,7 @@ func main() {
 
 	snippetIndex := models.NewIndex()
 
+	logger.Log(fmt.Sprintf("Crawling data directory: %s", c.DataPath))
 	filesystem.Crawl(c.DataPath, snippetIndex)
 
 	go filesystem.WatchDirectory(c.DataPath, snippetIndex)
