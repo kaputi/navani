@@ -67,7 +67,12 @@ func Init(dirPath string) error {
 		}
 	}
 
-	sessionFilePath := filepath.Join(dirPath, "navani.log") // TODO: move this to tmp directory unless flag is passed to write to specific file
+	tempPath := os.TempDir()
+	sessionFilePath := filepath.Join(tempPath, "navani.log")
+	logPath, logPathExists := os.LookupEnv("NAVANI_LOG_PATH") // TODO: make this an option passed through flags when cli is implemented
+	if logPathExists && logPath != "" {
+		sessionFilePath = logPath
+	}
 	sessionFile, err := os.OpenFile(sessionFilePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	log.SetOutput(sessionFile)
 
