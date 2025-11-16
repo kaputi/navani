@@ -23,7 +23,7 @@ func checkDebug() bool {
 }
 
 func dateTimeString() string {
-	return time.Now().Format("02-01-2006_15:04")
+	return time.Now().Format("02-01-2006_15:04:05")
 }
 
 func dateString() string {

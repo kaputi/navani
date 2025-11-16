@@ -22,10 +22,11 @@ var (
 )
 
 type Config struct {
-	Theme         *theme
-	DataPath      string
-	LogsPath      string
-	UserFiletypes map[string]string
+	Theme             *theme
+	DataPath          string
+	LogsPath          string
+	UserFiletypes     map[string]string
+	UserFiletypeIcons map[string]string
 }
 
 func New() *Config {

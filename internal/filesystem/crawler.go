@@ -12,7 +12,7 @@ import (
 	"github.com/kaputi/navani/internal/utils/logger"
 )
 
-func Crawl(dirPath string, snippetIndex *models.SnippetIndex) {
+func Crawl(dirPath string, parentNode *FileTreeNode, snippetIndex *models.SnippetIndex) {
 	filesInDir, err := os.ReadDir(dirPath)
 	if err != nil {
 		logger.Err(err)
@@ -20,7 +20,7 @@ func Crawl(dirPath string, snippetIndex *models.SnippetIndex) {
 	}
 
 	var (
-		directories        []fs.DirEntry
+		dirMap             = make(map[fs.DirEntry]*FileTreeNode)
 		snippetFiles       []fs.DirEntry
 		allMetaFiles       = make(map[string]fs.DirEntry)
 		remainingMetaFiles = make(map[string]bool)
@@ -30,7 +30,9 @@ func Crawl(dirPath string, snippetIndex *models.SnippetIndex) {
 	// files that are not c.MetaExtension or snippet files are ignored
 	for _, fileEntry := range filesInDir {
 		if fileEntry.IsDir() {
-			directories = append(directories, fileEntry)
+			dirNode := NewFileTreeNode(fileEntry.Name(), filepath.Join(dirPath, fileEntry.Name()), true)
+			parentNode.AddChild(dirNode)
+			dirMap[fileEntry] = dirNode
 			continue
 		}
 
@@ -75,10 +77,12 @@ func Crawl(dirPath string, snippetIndex *models.SnippetIndex) {
 		}
 
 		snippetIndex.Add(newSnippet)
+		parentNode.AddChild(NewFileTreeNode(newSnippet.FileName, newSnippet.FilePath, false))
 	}
 
-	for _, dirEntry := range directories {
-		Crawl(filepath.Join(dirPath, dirEntry.Name()), snippetIndex)
+	for dirFileEntry, dirNode := range dirMap {
+		innerDirPath := filepath.Join(dirPath, dirFileEntry.Name())
+		Crawl(innerDirPath, dirNode, snippetIndex)
 	}
 
 	for metaFileName, isRemaining := range remainingMetaFiles {

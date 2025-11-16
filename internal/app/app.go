@@ -5,6 +5,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/kaputi/navani/internal/app/ui"
 	"github.com/kaputi/navani/internal/config"
+	"github.com/kaputi/navani/internal/models"
 )
 
 type focusState uint
@@ -27,20 +28,23 @@ type app struct {
 	treeUI      ui.Tree
 	snippetUI   ui.SnippetList
 	contenUI    ui.Content
+
+	snippetIndex *models.SnippetIndex
 }
 
-func NewApp(c *config.Config) app {
+func NewApp(c *config.Config, snippetIndex *models.SnippetIndex) app {
 	return app{
 		focusPanel: 0,
 
 		config: c,
 
-		leftColumn:  ui.NewContainer(),
-		rightColumn: ui.NewContainer(),
-		langUI:      ui.NewLang(),
-		treeUI:      ui.NewTree(),
-		snippetUI:   ui.NewSnippetList(),
-		contenUI:    ui.NewContent(),
+		leftColumn:   ui.NewContainer(),
+		rightColumn:  ui.NewContainer(),
+		langUI:       ui.NewLang(),
+		treeUI:       ui.NewTree(),
+		snippetUI:    ui.NewSnippetList(),
+		contenUI:     ui.NewContent(),
+		snippetIndex: snippetIndex,
 	}
 }
 

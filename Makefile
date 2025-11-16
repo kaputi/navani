@@ -36,6 +36,9 @@ run:
 # run: build
 	# ./bin/${BINARY_NAME}-linux $(RUN_ARGS)
 
+.PHONY: debug
+debug:
+	DEBUG=true go run cmd/main.go
 
 clean:
 	go clean
