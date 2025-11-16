@@ -11,28 +11,42 @@ import (
 
 // TODO: use filepath.Join to make this cross-platform instead of os.PathSeparator
 var (
-	dataDirName = ".navani"
-	// defaultDataDirPath = "~" + string(os.PathSeparator) + dataDirName // TODO: make this cross-platform
-	defaultDataDirPath = "." + string(os.PathSeparator)
+	mainDir = ".navani"
+	dataDir = "data"
+	logDir  = "logs"
+	// USER DEFINED Configs
+	// this is the path where the main directory will be created, this should be read from a config file or environment variable
+	// userDataPath = "~" + string(os.PathSeparator) + dataDirName // TODO: make this cross-platform
+	userDataPath  = "." + string(os.PathSeparator)
+	MetaExtension = ".meta.json"
 )
 
 type Config struct {
-	Theme       *theme
-	DataDirPath string
+	Theme         *theme
+	DataPath      string
+	LogsPath      string
+	UserFiletypes map[string]string
 }
 
 func New() *Config {
-	// TODO: read config file and set these values accordingly
+	mainPath := filepath.Join(userDataPath, mainDir)
 	return &Config{
-		Theme:       newTheme(),
-		DataDirPath: filepath.Join(defaultDataDirPath, dataDirName),
+		Theme:         newTheme(),
+		DataPath:      filepath.Join(mainPath, dataDir),
+		LogsPath:      filepath.Join(mainPath, logDir),
+		UserFiletypes: make(map[string]string),
 	}
 }
 
 func (c *Config) Init() {
-	err := fsutils.CreateDir(c.DataDirPath)
+	err := fsutils.CreateDir(c.DataPath)
 	if err != nil {
-		logger.Critical(fmt.Errorf("failed to create data directory: %w", err))
+		logger.Fatal(fmt.Errorf("failed to create data directory: %w", err))
+	}
+
+	err = fsutils.CreateDir(c.LogsPath)
+	if err != nil {
+		logger.Fatal(fmt.Errorf("failed to create logs directory: %w", err))
 	}
 
 	c.Theme.init()
