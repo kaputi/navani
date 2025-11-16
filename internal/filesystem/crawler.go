@@ -27,8 +27,7 @@ func Crawl(dirPath string, snippetIndex *models.SnippetIndex) {
 	)
 
 	// Categorize files
-	// files that are not .json or snippet files are ignored
-	// all .json files are considered metadata files // TODO: this may need to be more strict
+	// files that are not c.MetaExtension or snippet files are ignored
 	for _, fileEntry := range filesInDir {
 		if fileEntry.IsDir() {
 			directories = append(directories, fileEntry)
@@ -36,10 +35,7 @@ func Crawl(dirPath string, snippetIndex *models.SnippetIndex) {
 		}
 
 		fileName := fileEntry.Name()
-		extension := filepath.Ext(fileName)
-		if utils.MatchExtension(fileName, config.MetaExtension) {
-			extension = config.MetaExtension
-		}
+		extension := utils.GetExtension(fileName)
 
 		switch extension {
 		case config.MetaExtension:
@@ -60,9 +56,9 @@ func Crawl(dirPath string, snippetIndex *models.SnippetIndex) {
 
 		needsToWriteMeta := false
 		if metaFile, exists := allMetaFiles[metaFileName]; exists {
-			remainingMetaFiles[metaFileName] = false
 			fileMetadata, err := ReadMetadata(filepath.Join(dirPath, metaFile.Name()))
 			if err == nil {
+				remainingMetaFiles[metaFileName] = false
 				metadata = fileMetadata
 			}
 		} else {
