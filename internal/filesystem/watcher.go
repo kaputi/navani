@@ -29,10 +29,10 @@ func handleRemoved(fullPath string, isMeta bool, snippetIndex *models.SnippetInd
 			logger.Log(fmt.Sprintf("Removed metadata file for snippet: %s", fullPath))
 		}
 	} else {
-		metadata := models.NewMetadataFromFileName(fileName)
 		snippetPath := models.SnippetPathFromMetadataPath(fullPath)
 		snippet, exists := snippetIndex.ByFilePath[snippetPath]
 		if exists {
+			metadata := models.NewMetadataFromFileName(fileName)
 			snippet.Metadata = metadata
 			err := WriteMetadata(snippet)
 			if err != nil {
@@ -116,17 +116,18 @@ func WatchDirectory(wathchPath string, snippetIndex *models.SnippetIndex) {
 			}
 			// RENAME ==================================================
 			if event.Op&fsnotify.Rename == fsnotify.Rename {
-				// TODO: if file is snippet, update and rename metadata
-				// if file is metadata, keep old name (WATCH RECURSIVE RENAMES!!!!!)
-				// event.renameName is not exported by fsnotify because of a bug,
-				// at the moment there is no handling for rename,if this is not fixed soon
-				// i should track the rename and implement the handler myself.
-
 				// in some OS the rename does a remove and then a create
 				if _, err := os.Stat(event.Name); os.IsNotExist(err) {
 					logger.Log(fmt.Sprintf("Removed file from rename: %s", fullPath))
+					handleRemoved(fullPath, isMeta, snippetIndex)
 				} else {
+
 					logger.Log(fmt.Sprintf("Renamed file: %s", fullPath))
+					// TODO: if file is snippet, update and rename metadata
+					// if file is metadata, keep old name (WATCH RECURSIVE RENAMES!!!!!)
+					// event.renameName is not exported by fsnotify because of a bug,
+					// at the moment there is no handling for rename,if this is not fixed soon
+					// i should track the rename and implement the handler myself.
 				}
 			}
 
