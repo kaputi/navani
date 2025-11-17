@@ -8,56 +8,56 @@ import (
 	"github.com/kaputi/navani/internal/utils/logger"
 )
 
-type FileTreeNode struct {
+type TreeNode struct {
 	name     string
 	path     string
 	ft       string
 	isDir    bool
 	open     bool
-	children []*FileTreeNode
+	children []*TreeNode
 }
 
-func NewFileTreeNode(name, path string, isDir bool) *FileTreeNode {
+func NewFileTreeNode(name, path string, isDir bool) *TreeNode {
 	ft, _ := utils.FTbyFileName(name)
-	return &FileTreeNode{
+	return &TreeNode{
 		name:     name,
 		path:     path,
 		ft:       ft,
 		isDir:    isDir,
 		open:     false,
-		children: []*FileTreeNode{},
+		children: []*TreeNode{},
 	}
 }
 
-func (n *FileTreeNode) Name() string {
+func (n *TreeNode) Name() string {
 	return n.name
 }
 
-func (n *FileTreeNode) IsDir() bool {
+func (n *TreeNode) IsDir() bool {
 	return n.isDir
 }
 
-func (n *FileTreeNode) Path() string {
+func (n *TreeNode) Path() string {
 	return n.path
 }
 
-func (n *FileTreeNode) FileType() string {
+func (n *TreeNode) FileType() string {
 	return n.ft
 }
 
-func (n *FileTreeNode) IsOpen() bool {
+func (n *TreeNode) IsOpen() bool {
 	return n.open
 }
 
-func (n *FileTreeNode) Open() {
+func (n *TreeNode) Open() {
 	n.open = true
 }
 
-func (n *FileTreeNode) Close() {
+func (n *TreeNode) Close() {
 	n.open = false
 }
 
-func (n *FileTreeNode) AddChild(child *FileTreeNode) {
+func (n *TreeNode) AddChild(child *TreeNode) {
 	if n.isDir {
 		n.children = append(n.children, child)
 	} else {
@@ -65,7 +65,7 @@ func (n *FileTreeNode) AddChild(child *FileTreeNode) {
 	}
 }
 
-func (n *FileTreeNode) Children() []*FileTreeNode {
+func (n *TreeNode) Children() []*TreeNode {
 	return n.children
 }
 
@@ -77,8 +77,7 @@ var (
 	indentSize = 2
 )
 
-func (n *FileTreeNode) Strings(strList []string, level int) []string {
-
+func (n *TreeNode) recursiveStrings(strList []string, level int) []string {
 	if n.isDir {
 		dirStr := strings.Repeat(indentChar, level*indentSize)
 		if n.open {
@@ -87,13 +86,12 @@ func (n *FileTreeNode) Strings(strList []string, level int) []string {
 			dirStr += closeChar
 		}
 		icon := utils.GetFtIcon("directory")
-		children := len(n.children)
-		dirStr += fmt.Sprintf("%s %s (%v):", icon, n.name, children)
+		dirStr += fmt.Sprintf("%s %s/", icon, n.name)
 		strList = append(strList, dirStr)
 
 		if n.open && len(n.children) > 0 {
 			for _, child := range n.children {
-				strList = child.Strings(strList, level+1)
+				strList = child.recursiveStrings(strList, level+1)
 			}
 		}
 	} else {
@@ -104,5 +102,10 @@ func (n *FileTreeNode) Strings(strList []string, level int) []string {
 		strList = append(strList, fileStr)
 	}
 
+	return strList
+}
+
+func (n *TreeNode) Strings() []string {
+	strList := n.recursiveStrings([]string{}, 0)
 	return strList
 }

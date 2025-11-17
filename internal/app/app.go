@@ -5,6 +5,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/kaputi/navani/internal/app/ui"
 	"github.com/kaputi/navani/internal/config"
+	"github.com/kaputi/navani/internal/filesystem"
 	"github.com/kaputi/navani/internal/models"
 )
 
@@ -18,42 +19,43 @@ const (
 )
 
 type app struct {
-	focusPanel focusState
-
 	config *config.Config
 
-	leftColumn  ui.Container
-	rightColumn ui.Container
-	langUI      ui.Lang
-	treeUI      ui.Tree
-	snippetUI   ui.SnippetList
-	contenUI    ui.Content
-
 	snippetIndex *models.SnippetIndex
+	treeRoot     *filesystem.TreeNode
+
+	focusPanel   focusState
+	leftColumn   ui.Container
+	rightColumn  ui.Container
+	langPanel    ui.LangPanel
+	treePanel    ui.TreePanel
+	snippePanel  ui.SnippetPanel
+	contentPanel ui.ContentPanel
 }
 
-func NewApp(c *config.Config, snippetIndex *models.SnippetIndex) app {
+func NewApp(c *config.Config, snippetIndex *models.SnippetIndex, treeRoot *filesystem.TreeNode) app {
 	return app{
-		focusPanel: 0,
-
 		config: c,
 
+		snippetIndex: snippetIndex,
+		treeRoot:     treeRoot,
+
+		focusPanel:   0,
 		leftColumn:   ui.NewContainer(),
 		rightColumn:  ui.NewContainer(),
-		langUI:       ui.NewLang(),
-		treeUI:       ui.NewTree(),
-		snippetUI:    ui.NewSnippetList(),
-		contenUI:     ui.NewContent(),
-		snippetIndex: snippetIndex,
+		langPanel:    ui.NewLangPanel(),
+		treePanel:    ui.NewTreePanel(treeRoot),
+		snippePanel:  ui.NewSnippePanel(),
+		contentPanel: ui.NewContentPanel(),
 	}
 }
 
 func (m app) Init() tea.Cmd {
 	return tea.Batch(
-		m.langUI.Init(),
-		m.treeUI.Init(),
-		m.snippetUI.Init(),
-		m.contenUI.Init(),
+		m.langPanel.Init(),
+		m.treePanel.Init(),
+		m.snippePanel.Init(),
+		m.contentPanel.Init(),
 	)
 }
 
@@ -96,14 +98,14 @@ func (m app) View() string {
 		snippetStyle = m.config.Theme.FocusPanel(snippetStyle)
 	}
 
-	langString := langStyle.Render(m.langUI.View())
-	treeString := treeStyle.Render(m.treeUI.View())
-	snippetString := snippetStyle.Render(m.snippetUI.View())
+	langString := langStyle.Render(m.langPanel.View())
+	treeString := treeStyle.Render(m.treePanel.View())
+	snippetString := snippetStyle.Render(m.snippePanel.View())
 
 	leftContent := lipgloss.JoinVertical(lipgloss.Top, langString, treeString, snippetString)
 	m.leftColumn.SetContent(leftContent)
 
-	rightContent := m.config.Theme.ContentPanelStyle.Render(m.contenUI.View())
+	rightContent := m.config.Theme.ContentPanelStyle.Render(m.contentPanel.View())
 	m.rightColumn.SetContent(rightContent)
 
 	s := lipgloss.JoinHorizontal(lipgloss.Top, leftContent, rightContent)

@@ -62,7 +62,7 @@ func main() {
 
 	go filesystem.WatchDirectory(c.DataPath, snippetIndex)
 
-	p := tea.NewProgram(app.NewApp(c, snippetIndex), tea.WithAltScreen())
+	p := tea.NewProgram(app.NewApp(c, snippetIndex, treeRoot), tea.WithAltScreen())
 
 	if _, err := p.Run(); err != nil {
 		logger.Fatal(err)
