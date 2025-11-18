@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/kaputi/navani/internal/config"
 	"github.com/kaputi/navani/internal/utils"
 	"github.com/kaputi/navani/internal/utils/logger"
 )
@@ -69,43 +70,49 @@ func (n *TreeNode) Children() []*TreeNode {
 	return n.children
 }
 
-// TODO: get characters from config
-var (
-	openChar   = "▼ "
-	closeChar  = "▶ "
-	indentChar = " "
-	indentSize = 2
-)
+// TODO: make directories sticky with config
+func (n *TreeNode) recursiveStrings(strList []string, level int, last bool) []string {
+	logger.Debug(fmt.Sprintf("Generating string for node: %s, level: %d, last: %t", n.name, level, last))
 
-func (n *TreeNode) recursiveStrings(strList []string, level int) []string {
+	str := ""
+
+	for range int(level) {
+		str += config.TreeIndentChar + strings.Repeat(" ", config.TreeIndentSize-1)
+	}
+
+	if last {
+		str = utils.ReplaceLastOcurrence(str, config.TreeIndentChar, config.TreeLastIndentChar)
+	}
+
 	if n.isDir {
-		dirStr := strings.Repeat(indentChar, level*indentSize)
+		if !last && len(str) > 0 {
+			str = config.TreeDirIndentChar + str[len(config.TreeIndentChar):]
+		}
 		if n.open {
-			dirStr += openChar
+			str += config.TreeOpenChar
 		} else {
-			dirStr += closeChar
+			str += config.TreeCloseChar
 		}
 		icon := utils.GetFtIcon("directory")
-		dirStr += fmt.Sprintf("%s %s/", icon, n.name)
-		strList = append(strList, dirStr)
+		str += fmt.Sprintf("%s %s/", icon, n.name)
+		strList = append(strList, str)
 
 		if n.open && len(n.children) > 0 {
-			for _, child := range n.children {
-				strList = child.recursiveStrings(strList, level+1)
+			for i, child := range n.children {
+				last := i == len(n.children)-1
+				strList = child.recursiveStrings(strList, level+1, last)
 			}
 		}
 	} else {
-		fileStr := strings.Repeat(indentChar, level*indentSize)
-		// TODO: get file icon from config based on file type
 		icon := utils.GetFtIcon(n.ft)
-		fileStr += fmt.Sprintf("%s %s", icon, n.name)
-		strList = append(strList, fileStr)
+		str += fmt.Sprintf("%s %s", icon, n.name)
+		strList = append(strList, str)
 	}
 
 	return strList
 }
 
 func (n *TreeNode) Strings() []string {
-	strList := n.recursiveStrings([]string{}, 0)
+	strList := n.recursiveStrings([]string{}, 0, false)
 	return strList
 }

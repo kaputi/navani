@@ -11,14 +11,20 @@ import (
 
 // TODO: use filepath.Join to make this cross-platform instead of os.PathSeparator
 var (
-	mainDir = ".navani"
-	dataDir = "data"
-	logDir  = "logs"
+	mainDir       = ".navani"
+	dataDir       = "data"
+	logDir        = "logs"
+	MetaExtension = ".meta.json"
 	// USER DEFINED Configs
 	// this is the path where the main directory will be created, this should be read from a config file or environment variable
 	// userDataPath = "~" + string(os.PathSeparator) + dataDirName // TODO: make this cross-platform
-	userDataPath  = "." + string(os.PathSeparator)
-	MetaExtension = ".meta.json"
+	userDataPath          = "." + string(os.PathSeparator)
+	TreeOpenChar          = "▼ "
+	TreeCloseChar         = "▶ "
+	TreeIndentChar        = "│"
+	TreeDirIndentChar = "├"
+	TreeLastIndentChar    = "└"
+	TreeIndentSize        = 2
 )
 
 type Config struct {
