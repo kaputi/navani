@@ -72,8 +72,6 @@ func (n *TreeNode) Children() []*TreeNode {
 
 // TODO: make directories sticky with config
 func (n *TreeNode) recursiveStrings(strList []string, level int, last bool) []string {
-	logger.Debug(fmt.Sprintf("Generating string for node: %s, level: %d, last: %t", n.name, level, last))
-
 	str := ""
 
 	for range int(level) {
@@ -93,8 +91,15 @@ func (n *TreeNode) recursiveStrings(strList []string, level int, last bool) []st
 		} else {
 			str += config.TreeCloseChar
 		}
+
 		icon := utils.GetFtIcon("directory")
-		str += fmt.Sprintf("%s %s/", icon, n.name)
+		if len(n.children) == 0 {
+			icon = utils.GetFtIcon("emptyDirectory")
+		} else if n.open {
+			icon = utils.GetFtIcon("openDirectory")
+		}
+
+		str += fmt.Sprintf("%s %s", icon, n.name)
 		strList = append(strList, str)
 
 		if n.open && len(n.children) > 0 {

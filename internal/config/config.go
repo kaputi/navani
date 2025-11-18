@@ -18,13 +18,13 @@ var (
 	// USER DEFINED Configs
 	// this is the path where the main directory will be created, this should be read from a config file or environment variable
 	// userDataPath = "~" + string(os.PathSeparator) + dataDirName // TODO: make this cross-platform
-	userDataPath          = "." + string(os.PathSeparator)
-	TreeOpenChar          = "▼ "
-	TreeCloseChar         = "▶ "
-	TreeIndentChar        = "│"
-	TreeDirIndentChar = "├"
-	TreeLastIndentChar    = "└"
-	TreeIndentSize        = 2
+	userDataPath       = "." + string(os.PathSeparator)
+	TreeOpenChar       = "▼ "
+	TreeCloseChar      = "▶ "
+	TreeIndentChar     = "│"
+	TreeDirIndentChar  = "├"
+	TreeLastIndentChar = "└"
+	TreeIndentSize     = 2
 )
 
 type Config struct {
