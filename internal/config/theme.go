@@ -31,12 +31,12 @@ type theme struct {
 
 	PanelStyle        lipgloss.Style
 	LangPanelStyle    lipgloss.Style
-	TreePanelStyle    lipgloss.Style
+	FilePanelStyle    lipgloss.Style
 	SnippetPanelStyle lipgloss.Style
 	ContentPanelStyle lipgloss.Style
 
 	LangPanelHeight    int
-	TreePanelHeight    int
+	FilePanelHeight    int
 	SnippetPanelHeight int
 	ContentPanelWidth  int
 	ContentPanelHeight int
@@ -84,11 +84,11 @@ func (t *theme) updateStyle() {
 	navPanelHeight := int((float32(TermHeight))*0.3) - yOffset
 
 	t.LangPanelHeight = navPanelHeight
-	t.TreePanelHeight = navPanelHeight
-	t.SnippetPanelHeight = TermHeight - t.LangPanelHeight - t.TreePanelHeight - yOffset*3
+	t.FilePanelHeight = navPanelHeight
+	t.SnippetPanelHeight = TermHeight - t.LangPanelHeight - t.FilePanelHeight - yOffset*3
 
 	t.ContentPanelWidth = TermWidth - navPanelWidth - xOffset
-	t.ContentPanelHeight = t.LangPanelHeight + t.TreePanelHeight + t.SnippetPanelHeight + yOffset*2
+	t.ContentPanelHeight = t.LangPanelHeight + t.FilePanelHeight + t.SnippetPanelHeight + yOffset*2
 
 	t.PanelStyle = lipgloss.NewStyle().
 		Margin(0, 0).
@@ -96,7 +96,7 @@ func (t *theme) updateStyle() {
 		Border(lipgloss.RoundedBorder())
 
 	t.LangPanelStyle = t.PanelStyle.Width(navPanelWidth).Height(t.LangPanelHeight)
-	t.TreePanelStyle = t.PanelStyle.Width(navPanelWidth).Height(t.TreePanelHeight)
+	t.FilePanelStyle = t.PanelStyle.Width(navPanelWidth).Height(t.FilePanelHeight)
 	t.SnippetPanelStyle = t.PanelStyle.Width(navPanelWidth).Height(t.SnippetPanelHeight)
 	t.ContentPanelStyle = t.PanelStyle.Width(t.ContentPanelWidth).Height(t.ContentPanelHeight)
 }
