@@ -13,7 +13,7 @@ type focusState uint
 
 const (
 	langPanel focusState = iota
-	treePanel
+	filePanel
 	snippetPanel
 	contentPanel
 )
@@ -24,13 +24,11 @@ type app struct {
 	snippetIndex *models.SnippetIndex
 	treeRoot     *filesystem.TreeNode
 
-	focusPanel   focusState
-	leftColumn   ui.Container
-	rightColumn  ui.Container
-	langPanel    ui.LangPanel
-	treePanel    ui.TreePanel
-	snippePanel  ui.SnippetPanel
-	contentPanel ui.ContentPanel
+	leftColumn  ui.Container
+	rightColumn ui.Container
+
+	focusPanel focusState
+	panels     map[focusState]tea.Model
 }
 
 func NewApp(c *config.Config, snippetIndex *models.SnippetIndex, treeRoot *filesystem.TreeNode) app {
@@ -40,22 +38,25 @@ func NewApp(c *config.Config, snippetIndex *models.SnippetIndex, treeRoot *files
 		snippetIndex: snippetIndex,
 		treeRoot:     treeRoot,
 
-		focusPanel:   0,
-		leftColumn:   ui.NewContainer(),
-		rightColumn:  ui.NewContainer(),
-		langPanel:    ui.NewLangPanel(),
-		treePanel:    ui.NewTreePanel(treeRoot),
-		snippePanel:  ui.NewSnippePanel(),
-		contentPanel: ui.NewContentPanel(),
+		focusPanel:  0,
+		leftColumn:  ui.NewContainer(),
+		rightColumn: ui.NewContainer(),
+
+		panels: map[focusState]tea.Model{
+			langPanel:    ui.NewLangPanel(),
+			filePanel:    ui.NewFilePanel(treeRoot, c),
+			snippetPanel: ui.NewSnippePanel(),
+			contentPanel: ui.NewContentPanel(),
+		},
 	}
 }
 
 func (m app) Init() tea.Cmd {
 	return tea.Batch(
-		m.langPanel.Init(),
-		m.treePanel.Init(),
-		m.snippePanel.Init(),
-		m.contentPanel.Init(),
+		m.panels[langPanel].Init(),
+		m.panels[filePanel].Init(),
+		m.panels[snippetPanel].Init(),
+		m.panels[contentPanel].Init(),
 	)
 }
 
@@ -66,16 +67,23 @@ func (m app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
-		case "tab", "j", "down":
+		case "tab", "l", "right":
 			m.focusPanel++
 			if m.focusPanel > snippetPanel {
 				m.focusPanel = langPanel
 			}
-		case "shift+tab", "k", "up":
+		case "shift+tab", "h", "left":
 			m.focusPanel--
 			// we use > instead of < because focusPanel is an unsigned int and will wrap around to max value
 			if m.focusPanel > snippetPanel {
 				m.focusPanel = snippetPanel
+			}
+		// NOTE: this are all propagated to focused pannel
+		case "j", "down", "k", "up":
+			if panel, ok := m.panels[m.focusPanel]; ok {
+				var cmd tea.Cmd
+				m.panels[m.focusPanel], cmd = panel.Update(msg)
+				cmds = append(cmds, cmd)
 			}
 		}
 	}
@@ -86,26 +94,26 @@ func (m app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m app) View() string {
 
 	langStyle := m.config.Theme.LangPanelStyle
-	treeStyle := m.config.Theme.TreePanelStyle
+	filesStyle := m.config.Theme.FilePanelStyle
 	snippetStyle := m.config.Theme.SnippetPanelStyle
 
 	switch m.focusPanel {
 	case langPanel:
 		langStyle = m.config.Theme.FocusPanel(langStyle)
-	case treePanel:
-		treeStyle = m.config.Theme.FocusPanel(treeStyle)
+	case filePanel:
+		filesStyle = m.config.Theme.FocusPanel(filesStyle)
 	case snippetPanel:
 		snippetStyle = m.config.Theme.FocusPanel(snippetStyle)
 	}
 
-	langString := langStyle.Render(m.langPanel.View())
-	treeString := treeStyle.Render(m.treePanel.View())
-	snippetString := snippetStyle.Render(m.snippePanel.View())
+	langString := langStyle.Render(m.panels[langPanel].View())
+	fileString := filesStyle.Render(m.panels[filePanel].View())
+	snippetString := snippetStyle.Render(m.panels[snippetPanel].View())
 
-	leftContent := lipgloss.JoinVertical(lipgloss.Top, langString, treeString, snippetString)
+	leftContent := lipgloss.JoinVertical(lipgloss.Top, langString, fileString, snippetString)
 	m.leftColumn.SetContent(leftContent)
 
-	rightContent := m.config.Theme.ContentPanelStyle.Render(m.contentPanel.View())
+	rightContent := m.config.Theme.ContentPanelStyle.Render(m.panels[contentPanel].View())
 	m.rightColumn.SetContent(rightContent)
 
 	s := lipgloss.JoinHorizontal(lipgloss.Top, leftContent, rightContent)
