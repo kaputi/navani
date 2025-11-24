@@ -27,6 +27,7 @@ internal/
 `
 
 # Key Points
+
 - **cmd/main.go**: 
     Entry point, sets up the Bubble Tea app and loads config.
 - **internal/app/**
