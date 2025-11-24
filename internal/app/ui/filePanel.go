@@ -48,12 +48,12 @@ func (f FilePanel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	fileStrings := f.root.Strings()
 	totalStrs := len(fileStrings)
 
-	if f.cursor > totalStrs {
-		f.cursor = totalStrs
+	if f.cursor > totalStrs-1 {
+		f.cursor = totalStrs - 1
 	}
 
-	if f.cursor > f.end {
-		diff := f.cursor - f.end
+	if f.cursor > f.end-1 {
+		diff := f.cursor - f.end + 1
 		f.end += diff
 		f.start += diff
 	}
@@ -64,7 +64,7 @@ func (f FilePanel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		f.end -= diff
 	}
 
-	fileStrings[f.cursor] = "=>>" + fileStrings[f.cursor]
+	fileStrings[f.cursor] = fileStrings[f.cursor] + " <=="
 
 	f.fileStrings = fileStrings[f.start:utils.Min(totalStrs, f.end)]
 
