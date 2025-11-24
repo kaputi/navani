@@ -57,12 +57,23 @@ func (m app) Init() tea.Cmd {
 		m.panels[filePanel].Init(),
 		m.panels[snippetPanel].Init(),
 		m.panels[contentPanel].Init(),
+		func() tea.Msg {
+			return initMsg{}
+		},
 	)
 }
+
+type initMsg struct{}
 
 func (m app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
+	case initMsg:
+		for key, panel := range m.panels {
+			var cmd tea.Cmd
+			m.panels[key], cmd = panel.Update(msg)
+			cmds = append(cmds, cmd)
+		}
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
