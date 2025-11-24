@@ -4,66 +4,97 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/kaputi/navani/internal/app/ui"
-	"github.com/kaputi/navani/internal/config/theme"
+	"github.com/kaputi/navani/internal/config"
+	"github.com/kaputi/navani/internal/filesystem"
+	"github.com/kaputi/navani/internal/models"
 )
 
 type focusState uint
 
 const (
 	langPanel focusState = iota
-	treePanel
+	filePanel
 	snippetPanel
 	contentPanel
 )
 
 type app struct {
-	focusPanel   focusState
-	leftColumn   ui.Container
-	rightColumn  ui.Container
-	langModel    ui.Lang
-	treeModel    ui.Tree
-	snippetModel ui.SnippetList
-	contentModel ui.Content
+	config *config.Config
+
+	snippetIndex *models.SnippetIndex
+	fileTree     *filesystem.FileTree
+
+	leftColumn  ui.Container
+	rightColumn ui.Container
+
+	focusPanel focusState
+	panels     map[focusState]tea.Model
 }
 
-func NewApp() app {
+func NewApp(c *config.Config, snippetIndex *models.SnippetIndex, fileTree *filesystem.FileTree) app {
 	return app{
-		focusPanel:   0,
-		leftColumn:   ui.NewContainer(),
-		rightColumn:  ui.NewContainer(),
-		langModel:    ui.NewLang(),
-		treeModel:    ui.NewTree(),
-		snippetModel: ui.NewSnippetList(),
-		contentModel: ui.NewContent(),
+		config: c,
+
+		snippetIndex: snippetIndex,
+		fileTree:     fileTree,
+
+		focusPanel:  0,
+		leftColumn:  ui.NewContainer(),
+		rightColumn: ui.NewContainer(),
+
+		panels: map[focusState]tea.Model{
+			langPanel:    ui.NewLangPanel(),
+			filePanel:    ui.NewFilePanel(fileTree, c),
+			snippetPanel: ui.NewSnippePanel(),
+			contentPanel: ui.NewContentPanel(),
+		},
 	}
 }
 
 func (m app) Init() tea.Cmd {
 	return tea.Batch(
-		m.langModel.Init(),
-		m.treeModel.Init(),
-		m.snippetModel.Init(),
-		m.contentModel.Init(),
+		m.panels[langPanel].Init(),
+		m.panels[filePanel].Init(),
+		m.panels[snippetPanel].Init(),
+		m.panels[contentPanel].Init(),
+		func() tea.Msg {
+			return initMsg{}
+		},
 	)
 }
+
+type initMsg struct{}
 
 func (m app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
+	case initMsg:
+		for key, panel := range m.panels {
+			var cmd tea.Cmd
+			m.panels[key], cmd = panel.Update(msg)
+			cmds = append(cmds, cmd)
+		}
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
-		case "tab", "j", "down":
+		case "tab", "l", "right":
 			m.focusPanel++
 			if m.focusPanel > snippetPanel {
 				m.focusPanel = langPanel
 			}
-		case "shift+tab", "k", "up":
+		case "shift+tab", "h", "left":
 			m.focusPanel--
 			// we use > instead of < because focusPanel is an unsigned int and will wrap around to max value
 			if m.focusPanel > snippetPanel {
 				m.focusPanel = snippetPanel
+			}
+		// NOTE: this are all propagated to focused pannel
+		case "j", "down", "k", "up", "enter", "backspace", " ":
+			if panel, ok := m.panels[m.focusPanel]; ok {
+				var cmd tea.Cmd
+				m.panels[m.focusPanel], cmd = panel.Update(msg)
+				cmds = append(cmds, cmd)
 			}
 		}
 	}
@@ -73,27 +104,27 @@ func (m app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m app) View() string {
 
-	langStyle := theme.LangPanelStyle
-	treeStyle := theme.TreePanelStyle
-	snippetStyle := theme.SnippetPanelStyle
+	langStyle := m.config.Theme.LangPanelStyle
+	filesStyle := m.config.Theme.FilePanelStyle
+	snippetStyle := m.config.Theme.SnippetPanelStyle
 
 	switch m.focusPanel {
 	case langPanel:
-		langStyle = theme.FocusPanel(langStyle)
-	case treePanel:
-		treeStyle = theme.FocusPanel(treeStyle)
+		langStyle = m.config.Theme.FocusPanel(langStyle)
+	case filePanel:
+		filesStyle = m.config.Theme.FocusPanel(filesStyle)
 	case snippetPanel:
-		snippetStyle = theme.FocusPanel(snippetStyle)
+		snippetStyle = m.config.Theme.FocusPanel(snippetStyle)
 	}
 
-	langString := langStyle.Render(m.langModel.View())
-	treeString := treeStyle.Render(m.treeModel.View())
-	snippetString := snippetStyle.Render(m.snippetModel.View())
+	langString := langStyle.Render(m.panels[langPanel].View())
+	fileString := filesStyle.Render(m.panels[filePanel].View())
+	snippetString := snippetStyle.Render(m.panels[snippetPanel].View())
 
-	leftContent := lipgloss.JoinVertical(lipgloss.Top, langString, treeString, snippetString)
+	leftContent := lipgloss.JoinVertical(lipgloss.Top, langString, fileString, snippetString)
 	m.leftColumn.SetContent(leftContent)
 
-	rightContent := theme.ContentPanelStyle.Render(m.contentModel.View())
+	rightContent := m.config.Theme.ContentPanelStyle.Render(m.panels[contentPanel].View())
 	m.rightColumn.SetContent(rightContent)
 
 	s := lipgloss.JoinHorizontal(lipgloss.Top, leftContent, rightContent)
