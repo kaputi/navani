@@ -3,7 +3,6 @@ package app
 import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/kaputi/navani/internal/app/ui"
 	"github.com/kaputi/navani/internal/config"
 	"github.com/kaputi/navani/internal/filesystem"
 	"github.com/kaputi/navani/internal/models"
@@ -24,8 +23,8 @@ type app struct {
 	snippetIndex *models.SnippetIndex
 	fileTree     *filesystem.FileTree
 
-	leftColumn  ui.Container
-	rightColumn ui.Container
+	leftColumn  Container
+	rightColumn Container
 
 	focusPanel focusState
 	panels     map[focusState]tea.Model
@@ -39,93 +38,106 @@ func NewApp(c *config.Config, snippetIndex *models.SnippetIndex, fileTree *files
 		fileTree:     fileTree,
 
 		focusPanel:  0,
-		leftColumn:  ui.NewContainer(),
-		rightColumn: ui.NewContainer(),
+		leftColumn:  NewContainer(),
+		rightColumn: NewContainer(),
 
 		panels: map[focusState]tea.Model{
-			langPanel:    ui.NewLangPanel(),
-			filePanel:    ui.NewFilePanel(fileTree, c),
-			snippetPanel: ui.NewSnippePanel(),
-			contentPanel: ui.NewContentPanel(),
+			langPanel:    NewLangPanel(),
+			filePanel:    NewFilePanel(fileTree, c),
+			snippetPanel: NewSnippePanel(),
+			contentPanel: NewContentPanel(),
 		},
 	}
 }
 
-func (m app) Init() tea.Cmd {
+func (a app) Init() tea.Cmd {
 	return tea.Batch(
-		m.panels[langPanel].Init(),
-		m.panels[filePanel].Init(),
-		m.panels[snippetPanel].Init(),
-		m.panels[contentPanel].Init(),
-		func() tea.Msg {
-			return initMsg{}
-		},
+		a.panels[langPanel].Init(),
+		a.panels[filePanel].Init(),
+		a.panels[snippetPanel].Init(),
+		a.panels[contentPanel].Init(),
+		InitMsg,
 	)
 }
 
-type initMsg struct{}
-
-func (m app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (a app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
+
 	case initMsg:
-		for key, panel := range m.panels {
+		for key, panel := range a.panels {
 			var cmd tea.Cmd
-			m.panels[key], cmd = panel.Update(msg)
+			a.panels[key], cmd = panel.Update(msg)
 			cmds = append(cmds, cmd)
 		}
+
+	case contentMsg:
+		var cmd tea.Cmd
+		a.panels[contentPanel], cmd = a.panels[contentPanel].Update(msg)
+		cmds = append(cmds, cmd)
+		snp, ok := a.snippetIndex.ByFilePath[msg.filePath]
+		if ok {
+			metadata := snp.Metadata
+			metadataStrs := metadata.Strings()
+			a.panels[snippetPanel], cmd = a.panels[snippetPanel].Update(snippetMetadataMsg{metadataStrings: metadataStrs})
+			cmds = append(cmds, cmd)
+		} else {
+			a.panels[snippetPanel], cmd = a.panels[snippetPanel].Update(snippetMetadataMsg{metadataStrings: []string{"No snippet selected"}})
+			cmds = append(cmds, cmd)
+
+		}
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
-			return m, tea.Quit
+			return a, tea.Quit
 		case "tab", "l", "right":
-			m.focusPanel++
-			if m.focusPanel > snippetPanel {
-				m.focusPanel = langPanel
+			a.focusPanel++
+			if a.focusPanel > snippetPanel {
+				a.focusPanel = langPanel
 			}
 		case "shift+tab", "h", "left":
-			m.focusPanel--
+			a.focusPanel--
 			// we use > instead of < because focusPanel is an unsigned int and will wrap around to max value
-			if m.focusPanel > snippetPanel {
-				m.focusPanel = snippetPanel
+			if a.focusPanel > snippetPanel {
+				a.focusPanel = snippetPanel
 			}
 		// NOTE: this are all propagated to focused pannel
 		case "j", "down", "k", "up", "enter", "backspace", " ":
-			if panel, ok := m.panels[m.focusPanel]; ok {
+			if panel, ok := a.panels[a.focusPanel]; ok {
 				var cmd tea.Cmd
-				m.panels[m.focusPanel], cmd = panel.Update(msg)
+				a.panels[a.focusPanel], cmd = panel.Update(msg)
 				cmds = append(cmds, cmd)
 			}
 		}
 	}
 
-	return m, tea.Batch(cmds...)
+	return a, tea.Batch(cmds...)
 }
 
-func (m app) View() string {
+func (a app) View() string {
+	langStyle := a.config.Theme.LangPanelStyle
+	filesStyle := a.config.Theme.FilePanelStyle
+	snippetStyle := a.config.Theme.SnippetPanelStyle
 
-	langStyle := m.config.Theme.LangPanelStyle
-	filesStyle := m.config.Theme.FilePanelStyle
-	snippetStyle := m.config.Theme.SnippetPanelStyle
-
-	switch m.focusPanel {
+	switch a.focusPanel {
 	case langPanel:
-		langStyle = m.config.Theme.FocusPanel(langStyle)
+		langStyle = a.config.Theme.FocusPanel(langStyle)
 	case filePanel:
-		filesStyle = m.config.Theme.FocusPanel(filesStyle)
+		filesStyle = a.config.Theme.FocusPanel(filesStyle)
 	case snippetPanel:
-		snippetStyle = m.config.Theme.FocusPanel(snippetStyle)
+		snippetStyle = a.config.Theme.FocusPanel(snippetStyle)
 	}
 
-	langString := langStyle.Render(m.panels[langPanel].View())
-	fileString := filesStyle.Render(m.panels[filePanel].View())
-	snippetString := snippetStyle.Render(m.panels[snippetPanel].View())
+	langString := langStyle.Render(a.panels[langPanel].View())
+	fileString := filesStyle.Render(a.panels[filePanel].View())
+	snippetString := snippetStyle.Render(a.panels[snippetPanel].View())
 
 	leftContent := lipgloss.JoinVertical(lipgloss.Top, langString, fileString, snippetString)
-	m.leftColumn.SetContent(leftContent)
+	a.leftColumn.SetContent(leftContent)
 
-	rightContent := m.config.Theme.ContentPanelStyle.Render(m.panels[contentPanel].View())
-	m.rightColumn.SetContent(rightContent)
+	rightContent := a.config.Theme.ContentPanelStyle.Render(a.panels[contentPanel].View())
+	a.rightColumn.SetContent(rightContent)
 
 	s := lipgloss.JoinHorizontal(lipgloss.Top, leftContent, rightContent)
 

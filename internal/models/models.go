@@ -1,8 +1,10 @@
 package models
 
 import (
+	"fmt"
 	"path/filepath"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -34,6 +36,16 @@ func NewMetadataFromFileName(fileName string) Metadata {
 		UpdatedAt:   time.Now().Unix(),
 		Copies:      0,
 		Tags:        []string{},
+	}
+}
+
+func (m *Metadata) Strings() []string {
+	return []string{
+		"Name: " + m.Name,
+		"Description: " + m.Description,
+		"Language: " + m.Language,
+		"Tags: " + strings.Join(m.Tags, ", "),
+		"Used: " + fmt.Sprintf("%d", m.Copies) + " times",
 	}
 }
 

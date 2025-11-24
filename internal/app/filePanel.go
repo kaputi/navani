@@ -1,4 +1,4 @@
-package ui
+package app
 
 import (
 	"strings"
@@ -33,6 +33,8 @@ func (f FilePanel) Init() tea.Cmd {
 }
 
 func (f FilePanel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmds []tea.Cmd
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -73,11 +75,22 @@ func (f FilePanel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		f.end -= diff
 	}
 
+	// TODO: highlight selected line with the theme
 	fileStrings[f.cursor] = fileStrings[f.cursor] + " <=="
 
 	f.fileStrings = fileStrings[f.start:utils.Min(totalStrs, f.end)]
 
-	return f, nil
+	openList := f.fileTree.OpenNodeList()
+	if len(openList) >= f.cursor {
+		node := openList[f.cursor]
+		if !node.IsDir() {
+			cmds = append(cmds, ContentMsg(node.Path()))
+		} else {
+			cmds = append(cmds, ContentMsg(""))
+		}
+	}
+
+	return f, tea.Batch(cmds...)
 }
 
 func (f FilePanel) View() string {
