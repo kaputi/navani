@@ -45,10 +45,14 @@ func main() {
 	snippetIndex := models.NewIndex()
 
 	logger.Log(fmt.Sprintf("Crawling data directory: %s", c.DataPath))
-	treeRoot := filesystem.NewFileTreeNode("root", c.DataPath, true)
-	treeRoot.Open()
+
+	fileTree := filesystem.NewFileTree(c.DataPath)
+	fileTree.Root.Open()
+	fileTree.UpdateNodeLists()
+	fileTree.UpdateOpenNodeList()
+
 	// TODO: save a state for the app, for example which directories are open or closed and what snippet is selected, and try to restore if posible
-	filesystem.Crawl(c.DataPath, treeRoot, snippetIndex)
+	filesystem.Crawl(c.DataPath, fileTree.Root, snippetIndex)
 
 	// LOG FOR DEBUGGING PURPOSES
 	snippets := snippetIndex.List()
@@ -62,7 +66,7 @@ func main() {
 
 	go filesystem.WatchDirectory(c.DataPath, snippetIndex)
 
-	p := tea.NewProgram(app.NewApp(c, snippetIndex, treeRoot), tea.WithAltScreen())
+	p := tea.NewProgram(app.NewApp(c, snippetIndex, fileTree), tea.WithAltScreen())
 
 	if _, err := p.Run(); err != nil {
 		logger.Fatal(err)

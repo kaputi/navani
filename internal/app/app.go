@@ -22,7 +22,7 @@ type app struct {
 	config *config.Config
 
 	snippetIndex *models.SnippetIndex
-	treeRoot     *filesystem.TreeNode
+	fileTree     *filesystem.FileTree
 
 	leftColumn  ui.Container
 	rightColumn ui.Container
@@ -31,12 +31,12 @@ type app struct {
 	panels     map[focusState]tea.Model
 }
 
-func NewApp(c *config.Config, snippetIndex *models.SnippetIndex, treeRoot *filesystem.TreeNode) app {
+func NewApp(c *config.Config, snippetIndex *models.SnippetIndex, fileTree *filesystem.FileTree) app {
 	return app{
 		config: c,
 
 		snippetIndex: snippetIndex,
-		treeRoot:     treeRoot,
+		fileTree:     fileTree,
 
 		focusPanel:  0,
 		leftColumn:  ui.NewContainer(),
@@ -44,7 +44,7 @@ func NewApp(c *config.Config, snippetIndex *models.SnippetIndex, treeRoot *files
 
 		panels: map[focusState]tea.Model{
 			langPanel:    ui.NewLangPanel(),
-			filePanel:    ui.NewFilePanel(treeRoot, c),
+			filePanel:    ui.NewFilePanel(fileTree, c),
 			snippetPanel: ui.NewSnippePanel(),
 			contentPanel: ui.NewContentPanel(),
 		},
@@ -90,7 +90,7 @@ func (m app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.focusPanel = snippetPanel
 			}
 		// NOTE: this are all propagated to focused pannel
-		case "j", "down", "k", "up":
+		case "j", "down", "k", "up", "enter", "backspace", " ":
 			if panel, ok := m.panels[m.focusPanel]; ok {
 				var cmd tea.Cmd
 				m.panels[m.focusPanel], cmd = panel.Update(msg)

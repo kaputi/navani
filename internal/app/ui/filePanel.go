@@ -11,20 +11,20 @@ import (
 
 type FilePanel struct {
 	config      *config.Config
-	root        *filesystem.TreeNode
+	fileTree    *filesystem.FileTree
 	cursor      int
 	start       int
 	end         int
 	fileStrings []string
 }
 
-func NewFilePanel(root *filesystem.TreeNode, c *config.Config) FilePanel {
+func NewFilePanel(fileTree *filesystem.FileTree, c *config.Config) FilePanel {
 	return FilePanel{
-		config: c,
-		root:   root,
-		cursor: 0,
-		start:  0,
-		end:    c.Theme.FilePanelHeight,
+		config:   c,
+		fileTree: fileTree,
+		cursor:   0,
+		start:    0,
+		end:      c.Theme.FilePanelHeight,
 	}
 }
 
@@ -42,10 +42,19 @@ func (f FilePanel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if f.cursor > 0 {
 				f.cursor--
 			}
+		case "enter", " ":
+			nodeList := f.fileTree.OpenNodeList()
+			if len(nodeList)-1 >= f.cursor {
+				node := nodeList[f.cursor]
+				if node.IsDir() {
+					node.Toggle()
+					f.fileTree.UpdateOpenNodeList()
+				}
+			}
 		}
 	}
 
-	fileStrings := f.root.Strings()
+	fileStrings := f.fileTree.Strings()
 	totalStrs := len(fileStrings)
 
 	if f.cursor > totalStrs-1 {
