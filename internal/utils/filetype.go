@@ -107,6 +107,8 @@ var (
 		"xml":              "\033[1;33m\033[0m", // Yellow
 		"yaml":             "\033[1;33m\033[0m", // Yellow
 		"directory":        "\033[1;34m\033[0m", // Blue folder
+		"openDirectory":    "\033[1;34m\033[0m", // Blue open folder
+		"emptyDirectory":   "\033[1;34m\033[0m", // Blue empty folder
 		"unknown":          "\033[1;30m\033[0m", // Grey
 	}
 	reverseLookupFt = make(map[string]string)

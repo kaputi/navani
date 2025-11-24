@@ -12,7 +12,7 @@ import (
 	"github.com/kaputi/navani/internal/utils/logger"
 )
 
-func Crawl(dirPath string, parentNode *FileTreeNode, snippetIndex *models.SnippetIndex) {
+func Crawl(dirPath string, parentNode *TreeNode, snippetIndex *models.SnippetIndex) {
 	filesInDir, err := os.ReadDir(dirPath)
 	if err != nil {
 		logger.Err(err)
@@ -20,7 +20,7 @@ func Crawl(dirPath string, parentNode *FileTreeNode, snippetIndex *models.Snippe
 	}
 
 	var (
-		dirMap             = make(map[fs.DirEntry]*FileTreeNode)
+		dirMap             = make(map[fs.DirEntry]*TreeNode)
 		snippetFiles       []fs.DirEntry
 		allMetaFiles       = make(map[string]fs.DirEntry)
 		remainingMetaFiles = make(map[string]bool)
