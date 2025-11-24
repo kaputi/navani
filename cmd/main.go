@@ -48,11 +48,11 @@ func main() {
 
 	fileTree := filesystem.NewFileTree(c.DataPath)
 	fileTree.Root.Open()
-	fileTree.UpdateNodeLists()
-	fileTree.UpdateOpenNodeList()
 
 	// TODO: save a state for the app, for example which directories are open or closed and what snippet is selected, and try to restore if posible
 	filesystem.Crawl(c.DataPath, fileTree.Root, snippetIndex)
+	fileTree.UpdateNodeLists()
+	fileTree.UpdateOpenNodeList()
 
 	// LOG FOR DEBUGGING PURPOSES
 	snippets := snippetIndex.List()
