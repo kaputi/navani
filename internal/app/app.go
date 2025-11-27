@@ -87,6 +87,11 @@ func (a app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		}
 
+	case editModeMsg:
+		var cmd tea.Cmd
+		a.panels[contentPanel], cmd = a.panels[contentPanel].Update(msg)
+		cmds = append(cmds, cmd)
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
@@ -102,8 +107,9 @@ func (a app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if a.focusPanel > snippetPanel {
 				a.focusPanel = snippetPanel
 			}
-		// NOTE: this are all propagated to focused pannel
-		case "j", "down", "k", "up", "enter", "backspace", " ":
+			// NOTE: this are all propagated to focused pannel
+		default:
+		// case "j", "down", "k", "up", "enter", "backspace", " ", "e":
 			if panel, ok := a.panels[a.focusPanel]; ok {
 				var cmd tea.Cmd
 				a.panels[a.focusPanel], cmd = panel.Update(msg)

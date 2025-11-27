@@ -3,13 +3,13 @@ package app
 import tea "github.com/charmbracelet/bubbletea"
 
 type initMsg struct{}
+type snippetMetadataMsg struct{ metadataStrings []string }
+type editModeMsg struct{}
+type contentMsg struct{ filePath string }
+type errorMsg struct{ err error }
 
 func InitMsg() tea.Msg {
 	return initMsg{}
-}
-
-type contentMsg struct {
-	filePath string
 }
 
 func ContentMsg(filePath string) func() tea.Msg {
@@ -18,6 +18,6 @@ func ContentMsg(filePath string) func() tea.Msg {
 	}
 }
 
-type snippetMetadataMsg struct {
-	metadataStrings []string
+func EditModeMsg() tea.Msg {
+	return editModeMsg{}
 }

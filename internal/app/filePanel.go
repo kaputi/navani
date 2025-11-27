@@ -28,6 +28,14 @@ func NewFilePanel(fileTree *filesystem.FileTree, c *config.Config) FilePanel {
 	}
 }
 
+func (f FilePanel) getNode() *filesystem.TreeNode {
+	nodeList := f.fileTree.OpenNodeList()
+	if len(nodeList)-1 >= f.cursor {
+		return nodeList[f.cursor]
+	}
+	return nil
+}
+
 func (f FilePanel) Init() tea.Cmd {
 	return nil
 }
@@ -44,14 +52,16 @@ func (f FilePanel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if f.cursor > 0 {
 				f.cursor--
 			}
+		case "e":
+			node := f.getNode()
+			if node != nil && !node.IsDir() {
+				cmds = append(cmds, EditModeMsg)
+			}
 		case "enter", " ":
-			nodeList := f.fileTree.OpenNodeList()
-			if len(nodeList)-1 >= f.cursor {
-				node := nodeList[f.cursor]
-				if node.IsDir() {
-					node.Toggle()
-					f.fileTree.UpdateOpenNodeList()
-				}
+			node := f.getNode()
+			if node != nil && node.IsDir() {
+				node.Toggle()
+				f.fileTree.UpdateOpenNodeList()
 			}
 		}
 	}
