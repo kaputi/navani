@@ -7,6 +7,7 @@ type snippetMetadataMsg struct{ metadataStrings []string }
 type editModeMsg struct{}
 type contentMsg struct{ filePath string }
 type errorMsg struct{ err error }
+type WindowResizeMsg struct{}
 
 func InitMsg() tea.Msg {
 	return initMsg{}

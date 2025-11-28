@@ -26,6 +26,8 @@ func Crawl(dirPath string, parentNode *TreeNode, snippetIndex *models.SnippetInd
 		remainingMetaFiles = make(map[string]bool)
 	)
 
+	c := config.Config()
+
 	// Categorize files
 	// files that are not c.MetaExtension or snippet files are ignored
 	for _, fileEntry := range filesInDir {
@@ -40,7 +42,7 @@ func Crawl(dirPath string, parentNode *TreeNode, snippetIndex *models.SnippetInd
 		extension := utils.GetExtension(fileName)
 
 		switch extension {
-		case config.MetaExtension:
+		case c.MetaExtension:
 			allMetaFiles[fileName] = fileEntry
 			remainingMetaFiles[fileName] = true
 		default:
@@ -52,7 +54,7 @@ func Crawl(dirPath string, parentNode *TreeNode, snippetIndex *models.SnippetInd
 
 	for _, snippetFile := range snippetFiles {
 		snippetFileName := snippetFile.Name()
-		metaFileName := snippetFileName + config.MetaExtension
+		metaFileName := snippetFileName + c.MetaExtension
 
 		metadata := models.NewMetadataFromFileName(snippetFileName)
 

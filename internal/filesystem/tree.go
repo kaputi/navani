@@ -130,22 +130,24 @@ func (ft *FileTree) NodeList() []*TreeNode {
 func recursiveStrings(currNode *TreeNode, strList []string, level int, last bool) []string {
 	str := ""
 
+	t := config.Theme()
+
 	for range level {
-		str += config.TreeIndentChar + strings.Repeat(" ", config.TreeIndentSize-1)
+		str += t.Tree.TreeIndentChar + strings.Repeat(" ", t.Tree.TreeIndentSize-1)
 	}
 
 	if last {
-		str = utils.ReplaceLastOcurrence(str, config.TreeIndentChar, config.TreeLastIndentChar)
+		str = utils.ReplaceLastOcurrence(str, t.Tree.TreeIndentChar, t.Tree.TreeLastIndentChar)
 	}
 
 	if currNode.isDir {
 		if !last && len(str) > 0 {
-			str = config.TreeDirIndentChar + str[len(config.TreeIndentChar):]
+			str = t.Tree.TreeDirIndentChar + str[len(t.Tree.TreeIndentChar):]
 		}
 		if currNode.open {
-			str += config.TreeOpenChar
+			str += t.Tree.TreeOpenChar
 		} else {
-			str += config.TreeCloseChar
+			str += t.Tree.TreeCloseChar
 		}
 
 		icon := utils.GetFtIcon("directory")

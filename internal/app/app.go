@@ -1,6 +1,10 @@
 package app
 
 import (
+	"os"
+	"os/signal"
+	"syscall"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/kaputi/navani/internal/config"
@@ -18,8 +22,6 @@ const (
 )
 
 type app struct {
-	config *config.Config
-
 	snippetIndex *models.SnippetIndex
 	fileTree     *filesystem.FileTree
 
@@ -30,10 +32,8 @@ type app struct {
 	panels     map[focusState]tea.Model
 }
 
-func NewApp(c *config.Config, snippetIndex *models.SnippetIndex, fileTree *filesystem.FileTree) app {
+func NewApp(snippetIndex *models.SnippetIndex, fileTree *filesystem.FileTree) app {
 	return app{
-		config: c,
-
 		snippetIndex: snippetIndex,
 		fileTree:     fileTree,
 
@@ -43,10 +43,19 @@ func NewApp(c *config.Config, snippetIndex *models.SnippetIndex, fileTree *files
 
 		panels: map[focusState]tea.Model{
 			langPanel:    NewLangPanel(),
-			filePanel:    NewFilePanel(fileTree, c),
+			filePanel:    NewFilePanel(fileTree),
 			snippetPanel: NewSnippePanel(),
 			contentPanel: NewContentPanel(),
 		},
+	}
+}
+func watchWindowResize() tea.Cmd {
+	return func() tea.Msg {
+		sig := make(chan os.Signal, 1)
+		signal.Notify(sig, syscall.SIGWINCH)
+		<-sig
+		signal.Stop(sig)
+		return WindowResizeMsg{}
 	}
 }
 
@@ -57,6 +66,7 @@ func (a app) Init() tea.Cmd {
 		a.panels[snippetPanel].Init(),
 		a.panels[contentPanel].Init(),
 		InitMsg,
+		watchWindowResize(),
 	)
 }
 
@@ -70,6 +80,13 @@ func (a app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			a.panels[key], cmd = panel.Update(msg)
 			cmds = append(cmds, cmd)
 		}
+
+	case WindowResizeMsg:
+		var cmd tea.Cmd
+		config.UpdateStyles()
+		// panels that need to crop
+		a.panels[filePanel], cmd = a.panels[filePanel].Update(WindowResizeMsg{})
+		cmds = append(cmds, cmd, watchWindowResize())
 
 	case contentMsg:
 		var cmd tea.Cmd
@@ -109,7 +126,7 @@ func (a app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			// NOTE: this are all propagated to focused pannel
 		default:
-		// case "j", "down", "k", "up", "enter", "backspace", " ", "e":
+			// case "j", "down", "k", "up", "enter", "backspace", " ", "e":
 			if panel, ok := a.panels[a.focusPanel]; ok {
 				var cmd tea.Cmd
 				a.panels[a.focusPanel], cmd = panel.Update(msg)
@@ -122,17 +139,19 @@ func (a app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (a app) View() string {
-	langStyle := a.config.Theme.LangPanelStyle
-	filesStyle := a.config.Theme.FilePanelStyle
-	snippetStyle := a.config.Theme.SnippetPanelStyle
+	t := config.Theme()
+
+	langStyle := t.LangPanelStyle
+	filesStyle := t.FilePanelStyle
+	snippetStyle := t.SnippetPanelStyle
 
 	switch a.focusPanel {
 	case langPanel:
-		langStyle = a.config.Theme.FocusPanel(langStyle)
+		langStyle = t.FocusPanel(langStyle)
 	case filePanel:
-		filesStyle = a.config.Theme.FocusPanel(filesStyle)
+		filesStyle = t.FocusPanel(filesStyle)
 	case snippetPanel:
-		snippetStyle = a.config.Theme.FocusPanel(snippetStyle)
+		snippetStyle = t.FocusPanel(snippetStyle)
 	}
 
 	langString := langStyle.Render(a.panels[langPanel].View())
@@ -142,7 +161,7 @@ func (a app) View() string {
 	leftContent := lipgloss.JoinVertical(lipgloss.Top, langString, fileString, snippetString)
 	a.leftColumn.SetContent(leftContent)
 
-	rightContent := a.config.Theme.ContentPanelStyle.Render(a.panels[contentPanel].View())
+	rightContent := t.ContentPanelStyle.Render(a.panels[contentPanel].View())
 	a.rightColumn.SetContent(rightContent)
 
 	s := lipgloss.JoinHorizontal(lipgloss.Top, leftContent, rightContent)

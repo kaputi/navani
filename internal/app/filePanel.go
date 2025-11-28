@@ -10,7 +10,6 @@ import (
 )
 
 type FilePanel struct {
-	config      *config.Config
 	fileTree    *filesystem.FileTree
 	cursor      int
 	start       int
@@ -18,13 +17,13 @@ type FilePanel struct {
 	fileStrings []string
 }
 
-func NewFilePanel(fileTree *filesystem.FileTree, c *config.Config) FilePanel {
+func NewFilePanel(fileTree *filesystem.FileTree) FilePanel {
+	t := config.Theme()
 	return FilePanel{
-		config:   c,
 		fileTree: fileTree,
 		cursor:   0,
 		start:    0,
-		end:      c.Theme.FilePanelHeight,
+		end:      t.FilePanelHeight,
 	}
 }
 
@@ -44,6 +43,11 @@ func (f FilePanel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
+	case WindowResizeMsg:
+		currSize := f.end - f.start
+		nextSize := config.Theme().FilePanelHeight
+		diff := currSize - nextSize
+		f.end -= diff
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "j", "down":

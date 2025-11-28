@@ -190,8 +190,8 @@ func GetFtIcon(fileType string) string {
 }
 
 func GetExtension(fileName string) string {
-	if MatchExtension(fileName, config.MetaExtension) {
-		return config.MetaExtension
+	if MatchExtension(fileName, config.Config().MetaExtension) {
+		return config.Config().MetaExtension
 	}
 	return filepath.Ext(fileName)
 }

@@ -16,10 +16,14 @@ import (
 
 func main() {
 
-	c := config.New()
-	c.Init()
+	err := config.LoadConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	err := logger.Init(c.LogsPath)
+	c := config.Config()
+
+	err = logger.Init(c.LogsPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -38,6 +42,7 @@ func main() {
 	for ext, ft := range c.UserFiletypes {
 		utils.RegisterFileType(ext, ft)
 	}
+
 	for ft, icon := range c.UserFiletypeIcons {
 		utils.RegisterIcons(ft, icon)
 	}
@@ -66,7 +71,7 @@ func main() {
 
 	go filesystem.WatchDirectory(c.DataPath, snippetIndex)
 
-	p := tea.NewProgram(app.NewApp(c, snippetIndex, fileTree), tea.WithAltScreen())
+	p := tea.NewProgram(app.NewApp(snippetIndex, fileTree), tea.WithAltScreen())
 
 	if _, err := p.Run(); err != nil {
 		logger.Fatal(err)

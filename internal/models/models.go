@@ -66,7 +66,7 @@ func NewSnippet(dirPath, fileName string, metadata Metadata) *Snippet {
 }
 
 func (s *Snippet) MetadataPath() string {
-	return filepath.Join(s.DirPath, s.FileName+config.MetaExtension)
+	return filepath.Join(s.DirPath, s.FileName+config.Config().MetaExtension)
 }
 
 type SnippetIndex struct {
@@ -169,5 +169,5 @@ func (idx *SnippetIndex) List() []*Snippet {
 }
 
 func SnippetPathFromMetadataPath(metadataPath string) string {
-	return metadataPath[:len(metadataPath)-len(config.MetaExtension)]
+	return metadataPath[:len(metadataPath)-len(config.Config().MetaExtension)]
 }

@@ -2,9 +2,6 @@ package config
 
 import (
 	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/kaputi/navani/internal/utils/logger"
@@ -12,22 +9,24 @@ import (
 )
 
 var (
-	defaultPalette = map[string]string{
-		"foreground": "#FFFFFF",
-		"background": "#000000",
-		"primary":    "#FFA500",
-		"secondary":  "#00FFFF",
-		"accent":     "#FF00FF",
-		"selected":   "#008000",
-	}
-	defaultWidthPercent float32 = 0.25
-	defaultPanelPadding [2]int  = [2]int{0, 1}
+	localTheme theme
 )
 
+type treeChars struct {
+	TreeOpenChar       string
+	TreeCloseChar      string
+	TreeIndentChar     string
+	TreeDirIndentChar  string
+	TreeLastIndentChar string
+	TreeIndentSize     int
+}
+
 type theme struct {
-	palette              map[string]string
-	navPanelWidthPercent float32
-	navPanelPadding      [2]int
+	Tree treeChars
+
+	Palette              map[string]string
+	NavPanelWidthPercent float32
+	NavPanelPadding      [2]int
 
 	PanelStyle        lipgloss.Style
 	LangPanelStyle    lipgloss.Style
@@ -42,13 +41,45 @@ type theme struct {
 	ContentPanelHeight int
 }
 
-func watchWindowResize(t *theme) {
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGWINCH)
-
-	for range sig {
-		t.updateStyle()
+func (t theme) Color(name string) (string, error) {
+	if color, exists := t.Palette[name]; exists {
+		return color, nil
 	}
+	return "", fmt.Errorf("color %s not found", name)
+}
+
+func (t theme) FocusPanel(inputStyle lipgloss.Style) lipgloss.Style {
+	accentColor, _ := t.Color("accent")
+	return inputStyle.BorderForeground(lipgloss.Color(accentColor))
+}
+
+func defaultTheme() theme {
+	return theme{
+		Tree: treeChars{
+			TreeOpenChar:       "▼ ",
+			TreeCloseChar:      "▶ ",
+			TreeIndentChar:     "│",
+			TreeDirIndentChar:  "├",
+			TreeLastIndentChar: "└",
+			TreeIndentSize:     2,
+		},
+
+		Palette: map[string]string{
+			"foreground": "#FFFFFF",
+			"background": "#000000",
+			"primary":    "#FFA500",
+			"secondary":  "#00FFFF",
+			"accent":     "#FF00FF",
+			"selected":   "#008000",
+		},
+		NavPanelWidthPercent: 0.25,
+		NavPanelPadding:      [2]int{0, 1},
+	}
+}
+
+func init() {
+	localTheme = defaultTheme()
+	UpdateStyles()
 }
 
 func getTermSize() (int, int) {
@@ -59,17 +90,7 @@ func getTermSize() (int, int) {
 	return width, height
 }
 
-// defaults
-func newTheme() *theme {
-	return &theme{
-		palette: defaultPalette,
-
-		navPanelWidthPercent: defaultWidthPercent,
-		navPanelPadding:      defaultPanelPadding,
-	}
-}
-
-func (t *theme) updateStyle() {
+func UpdateStyles() {
 
 	width, height := getTermSize()
 
@@ -77,52 +98,36 @@ func (t *theme) updateStyle() {
 	TermHeight := height
 
 	// NOTE:  style widths dont include padding and border
-	xOffset := 2 + t.navPanelPadding[1]*2
-	yOffset := 2 + t.navPanelPadding[0]*2
+	xOffset := 2 + localTheme.NavPanelPadding[1]*2
+	yOffset := 2 + localTheme.NavPanelPadding[0]*2
 
-	navPanelWidth := int(float32(TermWidth)*t.navPanelWidthPercent) - xOffset
+	navPanelWidth := int(float32(TermWidth)*localTheme.NavPanelWidthPercent) - xOffset
 	navPanelHeight := int((float32(TermHeight))*0.3) - yOffset
 
-	t.LangPanelHeight = navPanelHeight
-	t.FilePanelHeight = navPanelHeight
-	t.SnippetPanelHeight = TermHeight - t.LangPanelHeight - t.FilePanelHeight - yOffset*3
+	localTheme.LangPanelHeight = navPanelHeight
+	localTheme.FilePanelHeight = navPanelHeight
+	localTheme.SnippetPanelHeight = TermHeight - localTheme.LangPanelHeight - localTheme.FilePanelHeight - yOffset*3
 
-	t.ContentPanelWidth = TermWidth - navPanelWidth - xOffset
-	t.ContentPanelHeight = t.LangPanelHeight + t.FilePanelHeight + t.SnippetPanelHeight + yOffset*2
+	localTheme.ContentPanelWidth = TermWidth - navPanelWidth - xOffset
+	localTheme.ContentPanelHeight = localTheme.LangPanelHeight + localTheme.FilePanelHeight + localTheme.SnippetPanelHeight + yOffset*2
 
-	t.PanelStyle = lipgloss.NewStyle().
+	localTheme.PanelStyle = lipgloss.NewStyle().
 		Margin(0, 0).
-		Padding(t.navPanelPadding[0], t.navPanelPadding[1]).
+		Padding(localTheme.NavPanelPadding[0], localTheme.NavPanelPadding[1]).
 		Border(lipgloss.RoundedBorder())
 
-	t.LangPanelStyle = t.PanelStyle.Width(navPanelWidth).Height(t.LangPanelHeight)
-	t.FilePanelStyle = t.PanelStyle.Width(navPanelWidth).Height(t.FilePanelHeight)
-	t.SnippetPanelStyle = t.PanelStyle.Width(navPanelWidth).Height(t.SnippetPanelHeight)
-	t.ContentPanelStyle = t.PanelStyle.Width(t.ContentPanelWidth).Height(t.ContentPanelHeight)
+	localTheme.LangPanelStyle = localTheme.PanelStyle.Width(navPanelWidth).Height(localTheme.LangPanelHeight)
+	localTheme.FilePanelStyle = localTheme.PanelStyle.Width(navPanelWidth).Height(localTheme.FilePanelHeight)
+	localTheme.SnippetPanelStyle = localTheme.PanelStyle.Width(navPanelWidth).Height(localTheme.SnippetPanelHeight)
+	localTheme.ContentPanelStyle = localTheme.PanelStyle.Width(localTheme.ContentPanelWidth).Height(localTheme.ContentPanelHeight)
 }
 
-func (t *theme) init() {
-	// TODO: load or pass theme from config file
-	t.updateStyle()
-	go watchWindowResize(t)
+func Theme() theme {
+	return localTheme
 }
 
-func (t *theme) Color(name string) (string, error) {
-	if color, exists := t.palette[name]; exists {
-		return color, nil
-	}
-	return "", fmt.Errorf("color %s not found", name)
-}
+func LoadTheme() {
+	// TODO: reads the theme from the config directory (not configurable, depends on os)
 
-func (t *theme) FocusPanel(inputStyle lipgloss.Style) lipgloss.Style {
-	accentColor, _ := t.Color("accent")
-	return inputStyle.BorderForeground(lipgloss.Color(accentColor))
-}
-
-func (t *theme) UpdatePalette(palette map[string]string) {
-	for key, value := range palette {
-		if _, exists := t.palette[key]; exists {
-			t.palette[key] = value
-		}
-	}
+	UpdateStyles()
 }

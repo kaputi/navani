@@ -28,4 +28,7 @@
     - [ ] metadata editor
     - [x] metadata viewer
 - [x] content
-- [ ] create wizard/form
+- [ ] create wizard/form (could be used as editor)
+# to fix
+- [ ] resize doesnt fit content
+- [ ] config globals and not instance so it can be get from anywhere but only set with methods

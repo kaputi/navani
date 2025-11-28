@@ -2,59 +2,53 @@ package config
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/kaputi/navani/internal/utils/fsutils"
-	"github.com/kaputi/navani/internal/utils/logger"
 )
 
-// TODO: use filepath.Join to make this cross-platform instead of os.PathSeparator
 var (
-	mainDir       = ".navani"
-	dataDir       = "data"
-	logDir        = "logs"
-	MetaExtension = ".meta.json"
-	// USER DEFINED Configs
-	// this is the path where the main directory will be created, this should be read from a config file or environment variable
-	// userDataPath = "~" + string(os.PathSeparator) + dataDirName // TODO: make this cross-platform
-	userDataPath       = "." + string(os.PathSeparator)
-	TreeOpenChar       = "▼ "
-	TreeCloseChar      = "▶ "
-	TreeIndentChar     = "│"
-	TreeDirIndentChar  = "├"
-	TreeLastIndentChar = "└"
-	TreeIndentSize     = 2
+	localConfig config
 )
 
-type Config struct {
-	Theme             *theme
+type config struct {
 	DataPath          string
 	LogsPath          string
 	UserFiletypes     map[string]string
 	UserFiletypeIcons map[string]string
+	MetaExtension     string
 }
 
-func New() *Config {
-	mainPath := filepath.Join(userDataPath, mainDir)
-	return &Config{
-		Theme:         newTheme(),
-		DataPath:      filepath.Join(mainPath, dataDir),
-		LogsPath:      filepath.Join(mainPath, logDir),
-		UserFiletypes: make(map[string]string),
-	}
+func Config() config {
+	return localConfig
 }
 
-func (c *Config) Init() {
-	err := fsutils.CreateDir(c.DataPath)
-	if err != nil {
-		logger.Fatal(fmt.Errorf("failed to create data directory: %w", err))
+func LoadConfig() error {
+	mainDir := ".navani"
+	dataDir := "data"
+	logDir := "logs"
+
+	// TODO: reads the config from the config directory (not configurable, depends on os)
+	// userDataPath = "~" + string(os.PathSeparator) + dataDirName // TODO: make this cross-platform
+	mainPath := filepath.Join(".", mainDir)
+
+	localConfig = config{
+		DataPath:          filepath.Join(mainPath, dataDir),
+		LogsPath:          filepath.Join(mainPath, logDir),
+		UserFiletypes:     make(map[string]string),
+		UserFiletypeIcons: make(map[string]string),
+		MetaExtension:     ".meta.json",
 	}
 
-	err = fsutils.CreateDir(c.LogsPath)
+	err := fsutils.CreateDir(localConfig.DataPath)
 	if err != nil {
-		logger.Fatal(fmt.Errorf("failed to create logs directory: %w", err))
+		return fmt.Errorf("failed to create data directory: %w", err)
 	}
 
-	c.Theme.init()
+	err = fsutils.CreateDir(localConfig.LogsPath)
+	if err != nil {
+		return fmt.Errorf("failed to create logs directory: %w", err)
+	}
+
+	return nil
 }

@@ -13,6 +13,9 @@ import (
 )
 
 func handleRemoved(fullPath string, isMeta bool, snippetIndex *models.SnippetIndex) {
+
+	c := config.Config()
+
 	dirPath := filepath.Dir(fullPath)
 	fileName := filepath.Base(fullPath)
 
@@ -21,7 +24,7 @@ func handleRemoved(fullPath string, isMeta bool, snippetIndex *models.SnippetInd
 		if exist {
 			snippetIndex.Remove(snippet)
 		}
-		metadataPath := filepath.Join(dirPath, fileName+config.MetaExtension)
+		metadataPath := filepath.Join(dirPath, fileName+c.MetaExtension)
 		err := os.Remove(metadataPath)
 		if err != nil {
 			logger.Err(fmt.Errorf("failed to remove metadata file: %w", err))
@@ -43,6 +46,8 @@ func handleRemoved(fullPath string, isMeta bool, snippetIndex *models.SnippetInd
 }
 
 func WatchDirectory(wathchPath string, snippetIndex *models.SnippetIndex) {
+
+	c := config.Config()
 
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -74,12 +79,12 @@ func WatchDirectory(wathchPath string, snippetIndex *models.SnippetIndex) {
 			extension := utils.GetExtension(fileName)
 
 			_, err := utils.FTbyExtension(extension)
-			if extension != config.MetaExtension && err != nil {
+			if extension != c.MetaExtension && err != nil {
 				// only care about snippet files and metadata files
 				continue
 			}
 
-			isMeta := extension == config.MetaExtension
+			isMeta := extension == c.MetaExtension
 
 			// WRITE ==================================================
 			if event.Op&fsnotify.Write == fsnotify.Write {
