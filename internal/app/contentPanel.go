@@ -66,7 +66,7 @@ func (c ContentPanel) View() string {
 		return c.content
 	}
 
-	return "content panel (no snippet selected)"
+	return "(no snippet selected)"
 }
 
 func (c ContentPanel) openInEditor() tea.Cmd {
