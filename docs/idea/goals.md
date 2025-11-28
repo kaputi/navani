@@ -30,5 +30,5 @@
 - [x] content
 - [ ] create wizard/form (could be used as editor)
 # to fix
-- [ ] resize doesnt fit content
-- [ ] config globals and not instance so it can be get from anywhere but only set with methods
+- [x] resize doesnt fit content
+- [x] config globals and not instance so it can be get from anywhere but only set with methods
