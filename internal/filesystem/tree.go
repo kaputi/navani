@@ -88,7 +88,7 @@ type FileTree struct {
 
 func NewFileTree(rootPath string) *FileTree {
 	ft := &FileTree{
-		Root:         NewFileTreeNode("root", rootPath, true),
+		Root:         NewFileTreeNode("navani", rootPath, true),
 		openNodeList: []*TreeNode{},
 		nodeList:     []*TreeNode{},
 	}
