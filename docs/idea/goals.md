@@ -3,7 +3,6 @@
 - [x] file tracking/management
 - [ ] filter search
 - [x] open in editor
-- [ ] edit directly with syntax highlight
 - [ ] use/copy (increments count)
 - [ ] metadata
     - [x] name
@@ -24,11 +23,9 @@
 ## panels
 - [x] file tree
 - [ ] filters
-- [ ] metadata 
-    - [ ] metadata editor
-    - [x] metadata viewer
+- [x] metadata viewer
 - [x] content
-- [ ] create wizard/form (could be used as editor)
+- [ ] create/edit panel (could be used as editor)
 # to fix
 - [x] resize doesnt fit content
 - [x] config globals and not instance so it can be get from anywhere but only set with methods
